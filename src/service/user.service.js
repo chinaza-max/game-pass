@@ -1,0 +1,758 @@
+import { User,Task ,
+  EmailandTelValidation,
+  TaskReponse,AsignTask
+} from "../db/models/index.js";
+import userUtil from "../utils/user.util.js";
+import bcrypt from'bcrypt';
+import serverConfig from "../config/server.js";
+import {  Op, Sequelize } from "sequelize";
+import mailService from "../service/mail.service.js";
+import crypto from 'crypto';
+
+
+import {
+  NotFoundError,
+  ConflictError,
+  BadRequestError,
+  SystemError
+
+} from "../errors/index.js";
+
+class UserService {
+  UserModel = User;
+  TaskModel = Task;
+  AsignTaskModel = AsignTask;
+  EmailandTelValidationModel=EmailandTelValidation
+  TaskReponseModel=TaskReponse
+ 
+
+  
+
+  
+  async handleCreateTask(data,file) {
+    let { 
+      userId,
+      title,
+      taskDescription,
+      amount,
+      expiryDate
+    } = await userUtil.verifyHandleCreateTask.validateAsync(data);
+
+      let imageURL=''
+      if(file){
+    
+        if(serverConfig.NODE_ENV == "production"){
+          imageURL =
+          serverConfig.DOMAIN +
+          file.path.replace("/home", "");
+        }
+        else if(serverConfig.NODE_ENV == "development"){
+    
+          imageURL = serverConfig.DOMAIN+file.path.replace("public", "");
+        }
+    
+       
+      }
+
+      if(imageURL!=''){
+        await this.TaskModel.create({
+          userId:userId,
+          taskDescription:taskDescription,
+          taskImage:imageURL,
+          title,
+          amount:amount,
+          expiryDate
+        });
+      }else{
+        await this.TaskModel.create({
+          userId:userId,
+          taskDescription:taskDescription,
+          title,
+          amount:amount,
+          expiryDate
+        });
+      }
+
+  }
+
+
+  async handleRemoveChild(data) {
+    let { 
+      userId,
+      userId2,
+    } = await userUtil.verifyHandleRemoveChild.validateAsync(data);
+
+
+    const result =await this.AsignTaskModel.findOne({
+      where:{
+        userId:userId2,
+      }
+    });
+
+    if (!result) throw new BadRequestError("Cant remove child that has task assigned ");
+
+    this.UserModel.destroy({
+      id:userId2
+    });
+
+  }
+    
+  async handleAsignTask(data) {
+    let { 
+      userId,
+      taskId,
+      userId2,
+    } = await userUtil.verifyHandleAsignTask.validateAsync(data);
+
+
+    const result =await this.UserModel.findOne({
+      where:{
+        id:userId2,
+        parentUserId:userId
+      }
+    });
+    if (!result) throw new ConflictError("Child does not belong to Parent");
+
+    await this.AsignTaskModel.create({
+      taskId,
+      userId:userId2
+    });
+
+  }
+
+
+  async handleSubmitTask(data,files) {
+    let { 
+      userId,
+      taskId,
+      reponse,
+    } = await userUtil.verifyHandleCreateTask.validateAsync(data);
+
+      let businessPicture=''
+      if(files){
+        businessPicture= files.map((obj)=>{
+          let accessPath=''
+    
+        if(serverConfig.NODE_ENV == "production"){
+          accessPath =
+          serverConfig.DOMAIN +
+          obj.path.replace("/home", "");
+        }
+        else if(serverConfig.NODE_ENV == "development"){
+    
+          accessPath = serverConfig.DOMAIN+obj.path.replace("public", "");
+        }
+    
+        return  accessPath
+        })
+      }
+
+      const  result=await this.TaskReponseModel.findOne({
+        where:{
+          userId,
+          taskId
+        }
+      })
+
+      if (result) throw new BadRequestError("Only response is allowed");
+
+
+      if(businessPicture!=''){
+        await this.TaskReponseModel.create({
+          userId:userId,
+          reponse,
+          TaskResponseImage:businessPicture,
+        });
+      }else{
+        await this.TaskReponseModel.create({
+          userId:userId,
+          reponse
+        });
+      }
+
+  }
+  
+  
+  async handleDeleteResponse(data) {
+    let { 
+      taskResponseId,
+    } = await userUtil.verifyHandleDeleteSubmitTask.validateAsync(data);
+
+
+      const result=await this.TaskReponseModel.findOne({
+        where:{
+          id:taskResponseId
+        }
+      })
+
+      if (result.status==true) throw new BadRequestError("You can delete task response that has been accepted");
+        const result2 = await this.TaskReponseModel.findByPk(taskResponseId);
+        await result2.destroy();
+      
+  }
+
+  async handleDeleteSubmitTask(data) {
+    let { 
+      taskResponseId,
+    } = await userUtil.verifyHandleDeleteSubmitTask.validateAsync(data);
+
+
+      const result=await this.TaskReponseModel.findOne({
+        where:{
+          id:taskResponseId
+        }
+      })
+
+      if (result.status==true) throw new BadRequestError("You can delete task response that has been accepted");
+        const result2 = await this.TaskReponseModel.findByPk(taskResponseId);
+        await result2.destroy();
+      
+  }
+  
+  async handleAcceptTask(data) {
+    let { 
+      taskId,
+      userId,
+      value,
+      userId2 //this person who did the task 
+    } = await userUtil.verifyHandleAcceptTask.validateAsync(data);
+
+      const result=await this.TaskModel.findByPk(taskId)
+      const result2=await this.TaskReponseModel.findOne({
+        where:{
+          taskId,
+          userId:userId2
+        }
+      })
+
+      if (result) throw new BadRequestError("No task with this id");
+
+        result.update({
+          taskStatus:value
+        });
+
+        result2.update({
+          status:value
+        });
+      
+  }
+
+
+  async handleDeleteTask(data) {
+    let { 
+      taskId,
+    } = await userUtil.verifyHandleDeleteTask.validateAsync(data);
+
+
+      const result=await this.TaskReponseModel.findOne({
+        where:{
+          taskId:taskId
+        }
+      })
+
+        
+      if (result) throw new BadRequestError("This task can not be deleted already has response");
+        const result2 = await this.Task.findByPk(taskId);
+        await result2.destroy();
+      
+
+  }
+
+
+  async handleGetMyChildren(data) {
+    let { 
+      userId
+    } = await userUtil.verifyHandleGetMyChildren.validateAsync(data);
+
+    try {
+
+      const result=await this.UserModel.findAll({
+        where:{
+          parentUserId:userId
+        }
+      })
+
+      return result
+
+    } catch (error) {
+      console.log(error)
+        throw new SystemError(error.name,  error.parent)
+    }
+
+  }
+  async handleWhoIAm(data) {
+    let { 
+      userId
+    } = await userUtil.verifyHandleWhoIAm.validateAsync(data);
+
+    try {
+
+      const result=await this.UserModel.findByPk(userId)
+
+      return result
+
+    } catch (error) {
+      console.log(error)
+        throw new SystemError(error.name,  error.parent)
+    }
+
+  }
+
+  async handleAccountCount(data) {
+    let { 
+      userId,
+   
+    } = await userUtil.verifyHandleAccountCount.validateAsync(data);
+
+    let result ={};
+
+    try {
+
+      const numberOfChildren=await this.UserModel.count({
+            where:{
+              parentUserId:userId
+            }
+      })
+
+      const numberOfTask=await this.TaskModel.count({
+        where:{
+          userId
+        }
+      })
+
+      const AmountSpent=await this.TaskModel.sum('amount', {
+        where:{
+          parentUserId:userId,
+          taskStatus:true
+        }
+      })
+
+      const AmountPending=await this.TaskModel.sum('amount', {
+        where:{
+          parentUserId:userId,
+          taskStatus:true
+        }
+      })
+
+
+      result.numberOfChildren
+      result.AmountPending
+      result.AmountSpent
+      result.numberOfTask
+
+      return result
+
+
+    } catch (error) {
+      console.log(error)
+        throw new SystemError(error.name,  error.parent)
+    }
+
+  }
+  
+  async handleGetResponse(data) {
+    let { 
+      taskId,
+      type,
+      userId,
+      offset,
+      pageSize
+    } = await userUtil.verifyHandleGetResponse.validateAsync(data);
+
+    let result =[];
+    let details=[];
+
+    try {
+
+      if(type=="myResponse"){
+        details=await this.TaskReponseModel.findOne({
+          where: {
+            taskId,
+            userId,
+            isDeleted:false
+          },
+          include: [
+            {
+              model: this.UserModel,
+              attributes:['id','firstName'
+              ,'lastName','PublicKey',
+              'parentUserId','image',
+              'gender','emailAddress'],
+            }
+          ]
+        })
+      }else{
+        details=await this.TaskReponseModel.findAll({
+          limit:Number(pageSize),
+          offset:Number(offset),
+          where: {
+            taskId,
+            isDeleted:false
+          },
+          include: [
+            {
+              model: this.UserModel,
+              attributes:['id','firstName'
+              ,'lastName','PublicKey',
+              'parentUserId','image',
+              'gender','emailAddress'],
+            }
+          ]
+        })
+      }
+    
+      
+        
+      return result||[]
+    } catch (error) {
+      console.log(error)
+        throw new SystemError(error.name,  error.parent)
+    }
+
+  }
+
+  async handleGetTask(data,) {
+    let { 
+      userId,
+      type,
+      type2,
+      offset,
+      pageSize
+    } = await userUtil.verifyHandleGetTask.validateAsync(data);
+
+    let result =[];
+    let details=[];
+
+
+    try {
+
+      if(type=='parent'){
+
+        if(Number(pageSize)){
+          if(type2=='Unassigned'){
+            details=await this.TaskModel.findAll({
+              limit:Number(pageSize),
+              offset:Number(offset),
+              where: {
+                userId:userId,
+                status:false,
+                isDeleted:false,
+                '$AsignTasks.id$': null
+              },
+              include: [
+                {
+                  model: this.AsignTaskModel,
+                  as: "AsignTasks",
+                  required:false,
+                  where: {
+                    isDeleted: false,
+                  }
+                },
+                {
+                  model: this.UserModel,
+                  attributes:['id','firstName'
+                  ,'lastName','PublicKey',
+                  'parentUserId','image',
+                  'gender','emailAddress'],
+                }
+                
+              ]
+            })
+          }
+          else if(type2=='Pending'){
+            details=await this.TaskModel.findAll({
+              limit:Number(pageSize),
+              offset:Number(offset),
+              where: {
+                userId:userId,
+                status:true,
+                isDeleted:false
+              },
+              include: [
+                {
+                  model: this.TaskReponseModel,
+                  as: "TaskReponses",
+                  required:false,
+                  where: {
+                    isDeleted: false,
+                  }
+
+                },
+                {
+                  model: this.AsignTaskModel,
+                  as: "AsignTasks",
+                  where: {
+                    isDeleted: false,
+                  },
+                },
+                {
+                  model: this.UserModel,
+                  attributes:['id','firstName'
+                  ,'lastName','PublicKey',
+                  'parentUserId','image',
+                  'gender','emailAddress'],
+                }
+              ]
+            })
+          }
+          else if(type2=='Completed'){
+            details=await this.TaskModel.findAll({
+              limit:Number(pageSize),
+              offset:Number(offset),
+              where: {
+                userId:userId,
+                status:true,
+                isDeleted:false
+              },
+              include: [
+                {
+                  model: this.TaskReponseModel,
+                  as: "TaskReponses",
+                  required:false,
+                  where: {
+                    isDeleted: false,
+                  },
+                },
+                {
+                  model: this.UserModel,
+                  attributes:['id','firstName'
+                  ,'lastName','PublicKey',
+                  'parentUserId','image',
+                  'gender','emailAddress'],
+                }
+              ]
+            })
+          }
+          else if(type2=='all'){
+            details=await this.TaskModel.findAll({
+              limit:Number(pageSize),
+              offset:Number(offset),
+              where: {
+                userId:userId,
+                isDeleted:false
+              },
+              include: [
+                {
+                  model: this.TaskReponseModel,
+                  as: "TaskReponses",
+                  required:false,
+                  where: {
+                    isDeleted: false,
+                  },
+                },
+                {
+                  model: this.UserModel,
+                  attributes:['id','firstName'
+                  ,'lastName','PublicKey',
+                  'parentUserId','image',
+                  'gender','emailAddress'],
+                }
+                
+              ]
+            })
+          }
+        }
+
+      }
+      else{
+
+        const result =await this.UserModel.findByPk(userId)
+        const userId2=result.parentUserId
+
+        if(userId2){
+          if(Number(pageSize)){
+            if(type2=='active'){
+              details=await this.TaskModel.findAll({
+                limit:Number(pageSize),
+                offset:Number(offset),
+                where: {
+                  userId:userId2,
+                  status:false,
+                  isDeleted:false
+                },
+                include: [
+                  {
+                    model: this.TaskReponseModel,
+                    as: "TaskReponses",
+                    required:false,
+                    where: {
+                      isDeleted: false,
+                    },
+                    include: [
+                      {
+                        model: this.UserModel,
+                        attributes:['id','firstName'
+                        ,'lastName','PublicKey',
+                        'parentUserId','image',
+                        'gender','emailAddress'],
+                      }
+                    ]
+                  },
+                  {
+                    model: this.AsignTaskModel,
+                    as: "AsignTasks",
+                    where:{
+                      userId
+                    }
+                  }
+                  
+                ]
+              })
+            }
+            else if(type2=='completed'){
+              details=await this.TaskModel.findAll({
+                limit:Number(pageSize),
+                offset:Number(offset),
+                where: {
+                  userId:userId2,
+                  status:true,
+                  isDeleted:false
+                },
+                include: [
+                  {
+                    model: this.TaskReponseModel,
+                    as: "TaskReponses",
+                    required:false,
+                    where: {
+                      isDeleted: false,
+                    },
+                    include: [
+                      {
+                        model: this.UserModel,
+                        attributes:['id','firstName'
+                        ,'lastName','PublicKey',
+                        'parentUserId','image',
+                        'gender','emailAddress'],
+                      }
+                    ]
+                  },
+                  
+                  {
+                    model: this.AsignTaskModel,
+                    as: "AsignTasks",
+                    where:{
+                      userId
+                    }
+                  }
+                  
+                ]
+              })
+            }
+            else if(type2=='all'){
+              details=await this.TaskModel.findAll({
+                limit:Number(pageSize),
+                offset:Number(offset),
+                where: {
+                  userId:userId2,
+                  isDeleted:false
+                },
+                include: [
+                  {
+                    model: this.TaskReponseModel,
+                    as: "TaskReponses",
+                    required:false,
+                    where: {
+                      isDeleted: false,
+                    },
+                    include: [
+                      {
+                        model: this.UserModel,
+                        attributes:['id','firstName'
+                        ,'lastName','PublicKey',
+                        'parentUserId','image',
+                        'gender','emailAddress'],
+                      },
+                      {
+                        model: this.AsignTaskModel,
+                        as: "AsignTasks",
+                        where:{
+                          userId
+                        }
+                      }
+                    ]
+                  },
+                  
+                ]
+              })
+            }
+          }
+        }
+       
+
+      }
+    
+      return result||[]
+    } catch (error) {
+      console.log(error)
+        throw new SystemError(error.name,  error.parent)
+    }
+
+  }
+
+  async  sendEmailVerificationCode(emailAddress, userId ,password) {
+
+    try {
+      
+        let keyExpirationMillisecondsFromEpoch = new Date().getTime() + 30 * 60 * 1000;
+        const verificationCode =Math.floor(Math.random() * 9000000) + 100000;
+    
+        await this.EmailandTelValidationAdminModel.upsert({
+          userId,
+          type: 'email',
+          verificationCode,
+          expiresIn: new Date(keyExpirationMillisecondsFromEpoch),
+        }, {
+          where: {
+            userId
+          }
+        });
+    
+        try {
+
+          const params = new URLSearchParams();
+                params.append('userId', userId);
+                params.append('verificationCode',verificationCode);
+                params.append('type', 'email');
+
+            
+            await mailService.sendMail({ 
+              to: emailAddress,
+              subject: "Account details and verification",
+              templateName: "adminWelcome",
+              variables: {
+                password,
+                email: emailAddress,
+                domain: serverConfig.DOMAIN,
+                resetLink:serverConfig.NODE_ENV==='development'?`http://localhost/COMPANYS_PROJECT/verifyEmail.html?${params.toString()}`: `${serverConfig.DOMAIN}/adminpanel/PasswordReset.html?${params.toString()}`
+              },
+            });
+    
+        } catch (error) {
+            console.log(error)
+        }
+    
+    
+    } catch (error) {
+      console.log(error);
+    }
+
+  }
+
+  async generateRandomPassword(length = 12) {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=";
+    let password = "";
+
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      password += charset.charAt(randomIndex);
+    }
+
+    return password;
+  }
+
+
+}
+
+export default new UserService();
+
+//

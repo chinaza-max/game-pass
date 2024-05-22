@@ -283,7 +283,8 @@ class UserService {
         }
       })
 
-      if (result) throw new BadRequestError("No task with this id ");
+      if (!result) throw new BadRequestError("No task with this id ");
+      if (!result2) throw new BadRequestError("this user  is not assign to the task ");
 
         result.update({
           taskStatus:value

@@ -15,6 +15,15 @@ class UserUtil {
   })
 
 
+  verifyHandleSubmitTask=Joi.object({
+    userId: Joi.number().required(),
+    reponse: Joi.string().required(),
+    taskId: Joi.number().required(),
+    image: Joi.object({
+      sizes: Joi.number().positive().less(3000000).optional(),
+    }).optional()
+  })
+
   verifyHandleAsignTask=Joi.object({
     userId: Joi.number().required(),
     userId2: Joi.number().required(),
@@ -37,9 +46,8 @@ class UserUtil {
 
   verifyHandleAcceptTask=Joi.object({
     taskId: Joi.number().required(),
-    userId: Joi.number().required(),
     userId2: Joi.number().required(),
-    action:Joi.boolean().required()
+    value:Joi.boolean().required()
   })
 
   verifyHandleAccountCount=Joi.object({
@@ -65,7 +73,7 @@ class UserUtil {
       'Unassigned',
       'Pending',
       'Completed',
-      'all',
+      'All',
     ).required(),
     type2: Joi.string().valid(
       'parent',

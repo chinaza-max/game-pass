@@ -89,12 +89,26 @@ class UserService {
       }
     });
 
-    if (!result) throw new BadRequestError("Cant remove child that has task assigned ");
+    console.log("result")
+    console.log(result)
+    console.log("result")
 
-    this.UserModel.destroy({
-      id:userId2
-    });
 
+    if (result) throw new BadRequestError("Cant remove child that has task assigned ");
+
+
+
+      const result2=await this.UserModel.findByPk(userId2)
+      if(result2){
+
+        result2.destroy()
+
+        return "Child removed successfully"
+      }
+      else{
+        return "No child found"
+
+      }
   }
     
   async handleAsignTask(data) {
@@ -111,7 +125,16 @@ class UserService {
         parentUserId:userId
       }
     });
+
+    const result2 =await this.AsignTaskModel.findOne({
+      where:{
+        taskId,
+        userId:userId2
+      }
+    });
+
     if (!result) throw new ConflictError("Child does not belong to Parent");
+    if (result2) return;
 
     await this.AsignTaskModel.create({
       taskId,
@@ -121,30 +144,27 @@ class UserService {
   }
 
 
-  async handleSubmitTask(data,files) {
+  async handleSubmitTask(data,file) {
     let { 
       userId,
       taskId,
       reponse,
-    } = await userUtil.verifyHandleCreateTask.validateAsync(data);
+    } = await userUtil.verifyHandleSubmitTask.validateAsync(data);
 
-      let businessPicture=''
-      if(files){
-        businessPicture= files.map((obj)=>{
-          let accessPath=''
+      let imageUrl=''
+      if(file){
     
         if(serverConfig.NODE_ENV == "production"){
-          accessPath =
+          imageUrl =
           serverConfig.DOMAIN +
-          obj.path.replace("/home", "");
+          file.path.replace("/home", "");
         }
         else if(serverConfig.NODE_ENV == "development"){
     
-          accessPath = serverConfig.DOMAIN+obj.path.replace("public", "");
+          imageUrl = serverConfig.DOMAIN+file.path.replace("public", "");
         }
     
-        return  accessPath
-        })
+        
       }
 
       const  result=await this.TaskReponseModel.findOne({
@@ -154,21 +174,56 @@ class UserService {
         }
       })
 
-      if (result) throw new BadRequestError("Only response is allowed");
+      const  result2=await this.TaskModel.findOne({
+        where:{
+          id:taskId
+        }
+      })
+
+      const  result3=await this.AsignTaskModel.findOne({
+        where:{
+          taskId,
+          userId
+        }
+      })
+
+      console.log("result3")
+      console.log(result3)
+      console.log(userId)
+      console.log(taskId)
+
+      console.log("result3")
+
+      
+      if (result) throw new BadRequestError("Only 1 response is allowed");
+      if (!result2||!result3) throw new BadRequestError("No task found ");
 
 
-      if(businessPicture!=''){
+      try {
+
+      if(imageUrl!=''){
         await this.TaskReponseModel.create({
           userId:userId,
           reponse,
-          TaskResponseImage:businessPicture,
+          taskId,
+          TaskResponseImage:imageUrl,
         });
       }else{
         await this.TaskReponseModel.create({
           userId:userId,
+          taskId,
           reponse
         });
       }
+
+
+     
+        
+      } catch (error) { 
+        throw new SystemError(error.name,  error.parent)
+
+      }
+
 
   }
   
@@ -197,43 +252,49 @@ class UserService {
     } = await userUtil.verifyHandleDeleteSubmitTask.validateAsync(data);
 
 
-      const result=await this.TaskReponseModel.findOne({
-        where:{
-          id:taskResponseId
-        }
-      })
+      const result=await this.TaskReponseModel.findByPk(taskResponseId)
 
-      if (result.status==true) throw new BadRequestError("You can delete task response that has been accepted");
+      if(result){
+          
+        if (result.status==true) throw new BadRequestError("You can delete task response that has been accepted");
         const result2 = await this.TaskReponseModel.findByPk(taskResponseId);
-        await result2.destroy();
+          await result2.destroy();
+          return "Task response deleted successfully"
+      } else{
+        return "No response found"
+      }
+
+
       
   }
   
   async handleAcceptTask(data) {
     let { 
       taskId,
-      userId,
       value,
       userId2 //this person who did the task 
     } = await userUtil.verifyHandleAcceptTask.validateAsync(data);
 
       const result=await this.TaskModel.findByPk(taskId)
-      const result2=await this.TaskReponseModel.findOne({
+      const result2=await this.AsignTaskModel.findOne({
         where:{
           taskId,
           userId:userId2
         }
       })
 
-      if (result) throw new BadRequestError("No task with this id");
+      if (result) throw new BadRequestError("No task with this id ");
 
         result.update({
           taskStatus:value
         });
 
-        result2.update({
-          status:value
-        });
+        if(result2){
+          result2.update({
+            status:value
+          });
+        }
+        
       
   }
 
@@ -426,10 +487,10 @@ class UserService {
 
     try {
 
-      if(type=='parent'){
+      if(type2=='parent'){
 
         if(Number(pageSize)){
-          if(type2=='Unassigned'){
+          if(type=='Unassigned'){
             details=await this.TaskModel.findAll({
               limit:Number(pageSize),
               offset:Number(offset),
@@ -437,7 +498,7 @@ class UserService {
                 userId:userId,
                 status:false,
                 isDeleted:false,
-                '$AsignTasks.id$': null
+                //'$AsignTasks.id$': null
               },
               include: [
                 {
@@ -455,11 +516,10 @@ class UserService {
                   'parentUserId','image',
                   'gender','emailAddress'],
                 }
-                
               ]
             })
           }
-          else if(type2=='Pending'){
+          else if(type=='Pending'){
             details=await this.TaskModel.findAll({
               limit:Number(pageSize),
               offset:Number(offset),
@@ -471,7 +531,7 @@ class UserService {
               include: [
                 {
                   model: this.TaskReponseModel,
-                  as: "TaskReponses",
+                  as: "taskReponses",
                   required:false,
                   where: {
                     isDeleted: false,
@@ -495,7 +555,7 @@ class UserService {
               ]
             })
           }
-          else if(type2=='Completed'){
+          else if(type=='Completed'){
             details=await this.TaskModel.findAll({
               limit:Number(pageSize),
               offset:Number(offset),
@@ -507,7 +567,7 @@ class UserService {
               include: [
                 {
                   model: this.TaskReponseModel,
-                  as: "TaskReponses",
+                  as: "taskReponses",
                   required:false,
                   where: {
                     isDeleted: false,
@@ -523,7 +583,7 @@ class UserService {
               ]
             })
           }
-          else if(type2=='all'){
+          else if(type=='All'){
             details=await this.TaskModel.findAll({
               limit:Number(pageSize),
               offset:Number(offset),
@@ -534,7 +594,7 @@ class UserService {
               include: [
                 {
                   model: this.TaskReponseModel,
-                  as: "TaskReponses",
+                  as: "taskReponses",
                   required:false,
                   where: {
                     isDeleted: false,
@@ -556,12 +616,17 @@ class UserService {
       }
       else{
 
-        const result =await this.UserModel.findByPk(userId)
-        const userId2=result.parentUserId
+        const result = await this.UserModel.findByPk(userId)
+        const userId2 = result.parentUserId
+    
 
         if(userId2){
-          if(Number(pageSize)){
-            if(type2=='active'){
+            if(type=='Pending'){
+
+
+              console.log("dddddddddddddd")
+              console.log(userId2)
+
               details=await this.TaskModel.findAll({
                 limit:Number(pageSize),
                 offset:Number(offset),
@@ -573,7 +638,7 @@ class UserService {
                 include: [
                   {
                     model: this.TaskReponseModel,
-                    as: "TaskReponses",
+                    as: "taskReponses",
                     required:false,
                     where: {
                       isDeleted: false,
@@ -599,7 +664,7 @@ class UserService {
                 ]
               })
             }
-            else if(type2=='completed'){
+            else if(type=='Completed'){
               details=await this.TaskModel.findAll({
                 limit:Number(pageSize),
                 offset:Number(offset),
@@ -611,7 +676,7 @@ class UserService {
                 include: [
                   {
                     model: this.TaskReponseModel,
-                    as: "TaskReponses",
+                    as: "taskReponses",
                     required:false,
                     where: {
                       isDeleted: false,
@@ -638,7 +703,7 @@ class UserService {
                 ]
               })
             }
-            else if(type2=='all'){
+            else if(type=='All'){
               details=await this.TaskModel.findAll({
                 limit:Number(pageSize),
                 offset:Number(offset),
@@ -649,7 +714,7 @@ class UserService {
                 include: [
                   {
                     model: this.TaskReponseModel,
-                    as: "TaskReponses",
+                    as: "taskReponses",
                     required:false,
                     where: {
                       isDeleted: false,
@@ -675,13 +740,13 @@ class UserService {
                 ]
               })
             }
-          }
+          
         }
        
 
       }
     
-      return result||[]
+      return details
     } catch (error) {
       console.log(error)
         throw new SystemError(error.name,  error.parent)

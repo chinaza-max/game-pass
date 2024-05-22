@@ -920,7 +920,7 @@ export default class UserController {
     
         const my_bj = {
           ...req.query,
-          userId:req.user.id,
+          userId:req.user.id
         }
                           
         const result=await userService.handleGetTask(my_bj);
@@ -1615,11 +1615,11 @@ async updateUserByAdmin(req, res, next) {
         userId:req.user.id
       }
       
-      await userService.handleRemoveChild(my_bj);
+      const result=await userService.handleRemoveChild(my_bj);
 
       return res.status(200).json({
         status: 200,
-        message: "Child removed successfully",
+        message: result,
       });
 
 
@@ -1643,7 +1643,7 @@ async updateUserByAdmin(req, res, next) {
       }
       
       await userService.handleAsignTask(my_bj);
-
+     
       return res.status(200).json({
         status: 200,
         message: "Task assigned successfully",
@@ -1664,10 +1664,8 @@ async updateUserByAdmin(req, res, next) {
 
       const data = req.body;  
       
-      const { files } = req;
-      const sizes=files?.map((obj)=>{
-        return  obj.size
-    })
+      const { file } = req;
+      const sizes=file?.size
 
       let my_bj = {
         ...data,
@@ -1677,7 +1675,7 @@ async updateUserByAdmin(req, res, next) {
         userId:req.user.id
       }
       
-      await userService.handleSubmitTask(my_bj,files);
+      await userService.handleSubmitTask(my_bj,file);
 
       return res.status(200).json({
         status: 200,
@@ -1705,11 +1703,11 @@ async updateUserByAdmin(req, res, next) {
         ...data,
       }
       
-      await userService.handleDeleteSubmitTask(my_bj,files);
+      const result=await userService.handleDeleteSubmitTask(my_bj);
 
       return res.status(200).json({
         status: 200,
-        message: "Task response deleted successfully",
+        message: result,
       });
 
 
@@ -1756,11 +1754,11 @@ async updateUserByAdmin(req, res, next) {
         ...data,
       }
       
-      await userService.handleAcceptTask(my_bj,files);
+      await userService.handleAcceptTask(my_bj);
 
       return res.status(200).json({
         status: 200,
-        message: "Task  done",
+        message: "account successful",
       });
 
 

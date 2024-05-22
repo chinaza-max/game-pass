@@ -13,7 +13,7 @@ class UserRoutes extends UserController {
   routes() {
     this.router.post("/createTask",uploadHandler.image.single('image'), this.createTask);
     this.router.post("/deleteTask", this.deleteTask);
-    this.router.post("/submitTask", this.submitTask);
+    this.router.post("/submitTask",uploadHandler.image.single('image'), this.submitTask);
     this.router.post("/deleteSubmitTask", this.deleteSubmitTask);
     this.router.get("/getTask", this.getTask);
     this.router.get("/getResponse", this.getResponse);

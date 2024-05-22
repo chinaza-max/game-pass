@@ -18,6 +18,14 @@ function associate() {
     foreignKey: 'userId',
   })
 
+
+  User.hasMany(TaskReponse, {
+    foreignKey: 'userId',
+    as: "userTaskReponse",
+  });
+  TaskReponse.belongsTo(User, {
+    foreignKey: 'userId',
+  })
   
   Task.hasMany(AsignTask, {
     foreignKey: 'userId',

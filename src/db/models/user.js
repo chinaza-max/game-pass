@@ -36,7 +36,7 @@ export function init(connection) {
         allowNull: false,
       }, 
       parentUserId: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
         allowNull: true,
       }, 
       dateOfBirth: {

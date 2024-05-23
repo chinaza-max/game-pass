@@ -1758,7 +1758,7 @@ async updateUserByAdmin(req, res, next) {
 
       return res.status(200).json({
         status: 200,
-        message: "account successful",
+        message: "action successful",
       });
 
 

@@ -29,7 +29,7 @@ function associate() {
   
   Task.hasMany(AsignTask, {
     foreignKey: 'userId',
-    as: "AsignTasks",
+    as: "asignTasks",
   });
   AsignTask.belongsTo(Task, {
     foreignKey: 'userId',

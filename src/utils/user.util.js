@@ -51,7 +51,11 @@ class UserUtil {
   })
 
   verifyHandleAccountCount=Joi.object({
-    userId: Joi.number().required()
+    userId: Joi.number().required(),
+    type: Joi.string().valid(
+      'Parent',
+      'Child',
+    ).required(),
   })
 
   verifyHandleWhoIAm=Joi.object({

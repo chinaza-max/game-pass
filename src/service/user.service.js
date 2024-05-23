@@ -89,9 +89,6 @@ class UserService {
       }
     });
 
-    console.log("result")
-    console.log(result)
-    console.log("result")
 
 
     if (result) throw new BadRequestError("Cant remove child that has task assigned ");
@@ -187,13 +184,6 @@ class UserService {
         }
       })
 
-      console.log("result3")
-      console.log(result3)
-      console.log(userId)
-      console.log(taskId)
-
-      console.log("result3")
-
       
       if (result) throw new BadRequestError("Only 1 response is allowed");
       if (!result2||!result3) throw new BadRequestError("No task found ");
@@ -283,20 +273,25 @@ class UserService {
         }
       })
 
+      const result3=await this.TaskReponseModel.findOne({
+        where:{
+          taskId,
+          userId:userId2
+        }
+      })
+
       if (!result) throw new BadRequestError("No task with this id ");
       if (!result2) throw new BadRequestError("this user  is not assign to the task ");
+
 
         result.update({
           taskStatus:value
         });
 
-        if(result2){
-          result2.update({
-            status:value
-          });
-        }
-        
-      
+        result3.update({
+          status:value
+        });
+  
   }
 
 
@@ -363,53 +358,181 @@ class UserService {
   async handleAccountCount(data) {
     let { 
       userId,
-   
+      type
     } = await userUtil.verifyHandleAccountCount.validateAsync(data);
 
-    let result ={};
 
-    try {
+    console.log("userId")
+    console.log("userId")
 
-      const numberOfChildren=await this.UserModel.count({
-            where:{
-              parentUserId:userId
+    console.log(userId)
+    console.log("userId")
+    console.log("userId")
+
+
+    if(type=="Child"){
+      try {
+
+      
+        const AmountPending=await this.AsignTaskModel.findAll( {
+          where:{
+            userId:userId,
+          },
+          include:[{
+            model: this.TaskModel,
+            where: {
+              status:false,
+              isDeleted: false,
             }
-      })
-
-      const numberOfTask=await this.TaskModel.count({
-        where:{
-          userId
-        }
-      })
-
-      const AmountSpent=await this.TaskModel.sum('amount', {
-        where:{
-          parentUserId:userId,
-          taskStatus:true
-        }
-      })
-
-      const AmountPending=await this.TaskModel.sum('amount', {
-        where:{
-          parentUserId:userId,
-          taskStatus:true
-        }
-      })
+          },],
+          attributes: [[Sequelize.fn('sum', 'Task.amount'), 'totalAmount']]
+        })
 
 
-      result.numberOfChildren
-      result.AmountPending
-      result.AmountSpent
-      result.numberOfTask
+        const AmountEarned=await this.AsignTaskModel.findAll( {
+          where:{
+            userId:userId,
+          },
+          include:[{
+            model: this.TaskModel,
+            where: {
+              status:true,
+              isDeleted: false,
+            },
+            include:[
+              {
+                model: this.TaskReponseModel,
+                as: "taskReponses",
+                where: {
+                  status:true,
+                  isDeleted: false,
+                }
+              }
+            ]
+          },],
+          attributes: [[Sequelize.fn('sum', 'Task.amount'), 'totalAmount']]
+        })
 
-      return result
+        const numberOfCompletedTask=await this.AsignTaskModel.count( {
+          where:{
+            userId:userId,
+          },
+          include:[{
+            model: this.TaskModel,
+            where: {
+              status:true,
+              expiryDate: {
+                [Sequelize.Op.gt]: new Date() 
+              },
+              isDeleted: false,
+            },
+            include:[{
+              model: this.TaskReponseModel,
+              as: "taskReponses",
+              where: {
+                status:true
+              }
+            }]
+          },],
+        })
+        
 
+        const numberOfPendingTask=await this.AsignTaskModel.count( {
+          where:{
+            userId:userId,
+          },
+          include:[{
+            model: this.TaskModel,
+            where: {
+              status:false,
+              expiryDate: {
+                [Sequelize.Op.gt]: new Date() 
+              },
+              isDeleted: false,
+            },
+           
+          },],
+        })
 
-    } catch (error) {
-      console.log(error)
-        throw new SystemError(error.name,  error.parent)
+      
+  
+    
+        let result ={
+          AmountPending:AmountPending[0].dataValues.totalAmount||0,
+          AmountEarned:AmountEarned[0].dataValues.totalAmount||0,
+          numberOfCompletedTask:numberOfCompletedTask||0,
+          numberOfPendingTask:numberOfPendingTask||0,
+        };
+  
+        console.log(result)
+  
+        return result
+  
+  
+      } catch (error) {
+        console.log(error)
+          throw new SystemError(error.name,  error.parent)
+      }
+  
+    }
+    else{
+      try {
+
+        const numberOfChildren=await this.UserModel.count({
+              where:{
+                parentUserId:userId
+              }
+        })
+  
+        const numberOfActiveTask=await this.TaskModel.count({
+          where:{
+            userId,
+            status:false
+          }
+        })
+        const numberOfCompletedTask=await this.TaskModel.count({
+          where:{
+            userId,
+            status:true
+          }
+        })
+  
+        const AmountSpent=await this.TaskModel.sum('amount', {
+          where:{
+            userId:userId,
+            status:true
+          }
+        })
+  
+        const AmountPending=await this.TaskModel.sum('amount', {
+          where:{
+            userId:userId,
+            status:false
+          }
+        })
+  
+  
+        let result ={
+          numberOfChildren:numberOfChildren||0,
+          AmountPending:AmountPending||0,
+          AmountSpent:AmountSpent||0,
+          numberOfActiveTask:numberOfActiveTask||0,
+          numberOfCompletedTask:numberOfCompletedTask||0
+        };
+  
+        console.log(result)
+  
+        return result
+  
+  
+      } catch (error) {
+        console.log(error)
+          throw new SystemError(error.name,  error.parent)
+      }
+  
     }
 
+  
   }
   
   async handleGetResponse(data) {
@@ -421,11 +544,13 @@ class UserService {
       pageSize
     } = await userUtil.verifyHandleGetResponse.validateAsync(data);
 
-    let result =[];
     let details=[];
 
-    try {
+    const result =await this.TaskModel.findByPk(taskId);
 
+    if (!result) throw new BadRequestError("No task with this id");
+
+    try {
       if(type=="myResponse"){
         details=await this.TaskReponseModel.findOne({
           where: {
@@ -465,7 +590,7 @@ class UserService {
     
       
         
-      return result||[]
+      return details||[]
     } catch (error) {
       console.log(error)
         throw new SystemError(error.name,  error.parent)
@@ -492,23 +617,23 @@ class UserService {
 
         if(Number(pageSize)){
           if(type=='Unassigned'){
+
             details=await this.TaskModel.findAll({
               limit:Number(pageSize),
               offset:Number(offset),
               where: {
                 userId:userId,
                 status:false,
-                isDeleted:false,
-                //'$AsignTasks.id$': null
+                isDeleted:false
               },
               include: [
                 {
                   model: this.AsignTaskModel,
-                  as: "AsignTasks",
+                  as: "asignTasks",
                   required:false,
                   where: {
                     isDeleted: false,
-                  }
+                  },  
                 },
                 {
                   model: this.UserModel,
@@ -517,8 +642,13 @@ class UserService {
                   'parentUserId','image',
                   'gender','emailAddress'],
                 }
-              ]
+              ],
+              where: {
+                '$asignTasks.taskId$': null, 
+              },
+              subQuery: false
             })
+
           }
           else if(type=='Pending'){
             details=await this.TaskModel.findAll({
@@ -526,7 +656,7 @@ class UserService {
               offset:Number(offset),
               where: {
                 userId:userId,
-                status:true,
+                status:false,
                 isDeleted:false
               },
               include: [
@@ -537,22 +667,15 @@ class UserService {
                   where: {
                     isDeleted: false,
                   }
-
                 },
                 {
                   model: this.AsignTaskModel,
-                  as: "AsignTasks",
+                  as: "asignTasks",
                   where: {
                     isDeleted: false,
                   },
-                },
-                {
-                  model: this.UserModel,
-                  attributes:['id','firstName'
-                  ,'lastName','PublicKey',
-                  'parentUserId','image',
-                  'gender','emailAddress'],
                 }
+                
               ]
             })
           }
@@ -562,8 +685,11 @@ class UserService {
               offset:Number(offset),
               where: {
                 userId:userId,
-                status:true,
-                isDeleted:false
+                isDeleted:false,
+                [Op.or]: [
+                  { status: true },
+                  { expiryDate: { [Op.lt]: now } }
+                ]
               },
               include: [
                 {
@@ -656,7 +782,7 @@ class UserService {
                   },
                   {
                     model: this.AsignTaskModel,
-                    as: "AsignTasks",
+                    as: "asignTasks",
                     where:{
                       userId
                     }
@@ -695,7 +821,7 @@ class UserService {
                   
                   {
                     model: this.AsignTaskModel,
-                    as: "AsignTasks",
+                    as: "asignTasks",
                     where:{
                       userId
                     }
@@ -730,7 +856,7 @@ class UserService {
                       },
                       {
                         model: this.AsignTaskModel,
-                        as: "AsignTasks",
+                        as: "asignTasks",
                         where:{
                           userId
                         }

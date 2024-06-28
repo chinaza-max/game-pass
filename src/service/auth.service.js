@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from'bcrypt';
-import { User, 
+import { 
      EmailandTelValidation ,  
      PasswordReset,
    } from "../db/models/index.js";
@@ -19,12 +19,8 @@ import { Op } from "sequelize";
 
 
 class AuthenticationService {
-   UserModel = User;
    EmailandTelValidationModel=EmailandTelValidation
    PasswordResetModel=PasswordReset
-
-
-   
 
 
   verifyToken(token) {

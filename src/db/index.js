@@ -1,19 +1,24 @@
 import { Sequelize } from "sequelize";
 import serverConfig from "../config/server.js";
 import { init as initModels } from "./models/index.js";
-
-import fs from "fs";
-
+//const { PublicKey, Keypair, SystemProgram, Connection, sendAndConfirmTransaction } = require('@solana/web3.js');
+import { Connection, clusterApiUrl, PublicKey, SystemProgram } from '@solana/web3.js';
+import * as anchor from '@project-serum/anchor';
+import idl from "./idl.json" assert { type: 'json' };
+import {Wallet} from '@project-serum/anchor';
 
 
 class DB {
-   constructor() {
-    this.sequelize 
 
+  static program = null;
+  static userKeypair = null;
+  static connection = null;
+    
+  constructor() {
+    this.sequelize 
   }
 
   async connectDB() {
-
 
     /*
     let caCertBuffer;
@@ -32,8 +37,7 @@ class DB {
       password: serverConfig.DB_PASSWORD,
       port: Number(serverConfig.DB_PORT),
       database: serverConfig.DB_NAME,
-      logQueryParameters: true,
-    
+      logQueryParameters: true
     };
     
     this.sequelize = new Sequelize(
@@ -44,11 +48,13 @@ class DB {
     );
 
     initModels(this.sequelize);
-    if (serverConfig.NODE_ENV === "development") {
-        //await this.sequelize.sync({ alter: true });
+    if (serverConfig.NODE_ENV == "development") {  
+
+
+        //await this.sequelize.sync({ alter: true }); 
         //await this.sequelize.sync({ force: true }); 
-        }          
-/*  
+      }            
+/*         
         (async () => {
           try {
             const [results] = await this.sequelize.query('SHOW TABLES;');
@@ -89,6 +95,30 @@ this.sequelize.query(disableForeignKeyChecks)
 
        
   }
+  
+  async connectCLUSTERandReturnProgram() {
+
+    const programId = new PublicKey(process.env.PROGRAM_ID);
+    const connection = new Connection(clusterApiUrl('devnet'));
+
+
+    const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
+    const secretKey = Uint8Array.from(secret)
+    const wallet = anchor.web3.Keypair.fromSecretKey(secretKey)
+  
+    
+    const provider = new anchor.AnchorProvider(connection, new Wallet(wallet), {});
+    const program = new anchor.Program(idl, programId, provider);
+    
+    DB.program=program
+    DB.userKeypair=wallet
+    DB.connection=connection
+
+  }
+  getBlockChainData() {
+    return {userKeypair:DB.userKeypair,program:DB.program,connection:DB.connection};
+  }
+
 
 }
 

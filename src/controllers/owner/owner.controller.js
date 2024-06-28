@@ -1,10 +1,35 @@
-import userService from "../../service/user.service.js";
-import authService from "../../service/auth.service.js";
-
-export default class UserController {
+import ownerService from "../../service/owner.service.js";
 
 
-/*
+
+export default class OwnerController {
+
+
+  async initializeMainAccount(req, res, next) {
+
+    try {
+      const data = req.body;        
+
+      let my_bj = {
+        ...data,
+      }
+
+      const obj = await ownerService.handleInitializeMainAccount(my_bj);
+        return res.status(200).json({
+          status: 200,
+          message: "successfully",
+        });
+      
+     
+    } catch (error) {
+      console.log(error);
+      next(error)
+    }
+    
+  }
+
+
+  /*
   async sendVerificationCodeEmailOrTelAdmin(req, res, next) {
 
     try {
@@ -51,9 +76,6 @@ export default class UserController {
       }
 
       const obj = await userService.handleAddOrUpdatefilter(my_bj);
-  
-
-      
         return res.status(200).json({
           status: 200,
           message: "filter setting updated successfully",
@@ -1516,10 +1538,10 @@ export default class UserController {
     }
   }
 
-*//*
+*/
   
 
-
+/*
 async updateUserByAdmin(req, res, next) {
 
   try {

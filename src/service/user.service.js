@@ -1,6 +1,5 @@
-import { User,Task ,
-  EmailandTelValidation,
-  TaskReponse,AsignTask
+import {
+  EmailandTelValidation
 } from "../db/models/index.js";
 import userUtil from "../utils/user.util.js";
 import bcrypt from'bcrypt';
@@ -19,16 +18,9 @@ import {
 } from "../errors/index.js";
 
 class UserService {
-  UserModel = User;
-  TaskModel = Task;
-  AsignTaskModel = AsignTask;
   EmailandTelValidationModel=EmailandTelValidation
-  TaskReponseModel=TaskReponse
- 
 
-  
-
-  
+    
   async handleCreateTask(data,file) {
     let { 
       userId,

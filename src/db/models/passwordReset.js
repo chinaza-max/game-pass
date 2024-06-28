@@ -4,8 +4,6 @@ import {
     Model
   } from "sequelize";
 
-  import serverConfig from "../../config/server.js";
-
 
   class PasswordReset extends Model {}
 

@@ -1,10 +1,8 @@
 import {
-
     DataTypes,
     Model
   } from "sequelize";
 
-  import serverConfig from "../../config/server.js";
 
 
   class EmailandTelValidation extends Model {}

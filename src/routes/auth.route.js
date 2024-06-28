@@ -10,7 +10,7 @@ class AuthRoutes extends AuthController {
   }
 
   routes() {
-
+/*
     this.router.post("/registerUser", this.signupUser);
     this.router.post("/verifyEmailorTel", this.verifyEmailorTel);
     this.router.post("/sendVerificationCodeEmailOrTel", this.sendVerificationCodeEmailOrTel);
@@ -18,7 +18,7 @@ class AuthRoutes extends AuthController {
     this.router.post("/loginUser", this.loginUser);
     this.router.post("/sendPasswordResetLink", this.resetPasswordEmail);
     this.router.post("/resetPassword", this.resetPassword);
-
+*/
   }
 }
 

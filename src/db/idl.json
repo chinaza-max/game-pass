@@ -1,0 +1,161 @@
+{
+  "version": "0.1.0",
+  "name": "game_pass",
+  "instructions": [
+    {
+      "name": "initializeMainAccount",
+      "accounts": [
+        { "name": "gamePass", "isMut": true, "isSigner": false },
+        { "name": "user", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false },
+        { "name": "rent", "isMut": false, "isSigner": false }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializeGame",
+      "accounts": [
+        { "name": "gameAcct", "isMut": true, "isSigner": false },
+        { "name": "gamePass", "isMut": true, "isSigner": false },
+        { "name": "user", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false },
+        { "name": "rent", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "uniqueId", "type": "u64" },
+        { "name": "gameName", "type": "string" },
+        { "name": "createdAt", "type": "i64" }
+      ]
+    },
+    {
+      "name": "initializeUserGameAccount",
+      "accounts": [
+        { "name": "userGameAcct", "isMut": true, "isSigner": false },
+        { "name": "gamePass", "isMut": true, "isSigner": false },
+        { "name": "gameAcct", "isMut": true, "isSigner": false },
+        { "name": "user", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false },
+        { "name": "rent", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "gameId", "type": "string" },
+        { "name": "createdAt", "type": "i64" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "UserGameAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "gameId", "type": "string" },
+          { "name": "accountId", "type": "string" },
+          { "name": "level", "type": "u64" },
+          { "name": "score", "type": "u64" },
+          { "name": "status", "type": "string" },
+          { "name": "assets", "type": { "vec": { "defined": "Assets" } } },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "updateAt", "type": "i64" },
+          { "name": "owner", "type": "publicKey" }
+        ]
+      }
+    },
+    {
+      "name": "GamePass",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "bump", "type": "u8" },
+          { "name": "totalUsers", "type": "u64" },
+          { "name": "totalGames", "type": "u64" },
+          {
+            "name": "userGameAccount",
+            "type": { "vec": { "defined": "UserGameAcct" } }
+          },
+          { "name": "games", "type": { "vec": { "defined": "GameStructs" } } },
+          { "name": "users", "type": { "vec": { "defined": "Users" } } },
+          { "name": "owner", "type": "publicKey" }
+        ]
+      }
+    },
+    {
+      "name": "GameAccts",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "uniqueId", "type": "u64" },
+          { "name": "gameId", "type": "string" },
+          { "name": "gameName", "type": "string" },
+          { "name": "gameStatus", "type": "string" },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "updatedAt", "type": "i64" },
+          { "name": "owner", "type": "publicKey" }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "GameStructs",
+      "type": {
+        "kind": "struct",
+        "fields": [{ "name": "gameId", "type": "string" }]
+      }
+    },
+    {
+      "name": "UserGameAcct",
+      "type": {
+        "kind": "struct",
+        "fields": [{ "name": "accountId", "type": "string" }]
+      }
+    },
+    {
+      "name": "Users",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "emailAddress", "type": "string" },
+          { "name": "walletAddress", "type": "publicKey" },
+          { "name": "games", "type": { "vec": { "defined": "GameStructs" } } },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "updateAt", "type": "i64" }
+        ]
+      }
+    },
+    {
+      "name": "Assets",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "assetAddress", "type": "publicKey" },
+          { "name": "assetName", "type": "string" }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "GameAlreadyCreated",
+      "msg": "Game Already Created!"
+    },
+    { "code": 6001, "name": "GameDoesNotExist", "msg": "Game Doesn't Exist" },
+    { "code": 6002, "name": "UserDoesNotExist", "msg": "User Doesn't Exist" },
+    {
+      "code": 6003,
+      "name": "UserAlreadyRegistered",
+      "msg": "User Already Registered"
+    },
+    {
+      "code": 6004,
+      "name": "AccountCreationFailed",
+      "msg": "Account Creation Failed!"
+    },
+    {
+      "code": 6005,
+      "name": "NotEnoughTokens",
+      "msg": "Not enough tokens available for sale."
+    }
+  ]
+}

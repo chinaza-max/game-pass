@@ -1,14 +1,7 @@
 import authService from "../../service/auth.service.js";
-import { User,EmailandTelValidation } from "../../db/models/index.js";
-
+//import { EmailandTelValidation } from "../../db/models/index.js";
 
 export default class AuthenticationController {
-
-
-  
-
-
-  
 
   
 

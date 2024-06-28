@@ -1,15 +1,13 @@
 import {  Sequelize } from "sequelize";
-import User, { init as initUser } from "./user.js";
-import Task, { init as initTask } from "./task.js";
-import TaskReponse, { init as initTaskReponse } from "./taskResponse.js";
 import PasswordReset, { init as initPasswordReset } from "./passwordReset.js";
 import EmailandTelValidation, { init as initEmailandTelValidation } from "./emailAndTelValidation.js";
-import AsignTask, { init as initAsignTask } from "./assignTask.js";
 
 
 
 function associate() {
 
+
+  /*
   User.hasMany(Task, {
     foreignKey: 'userId',
     as: "Tasks",
@@ -43,7 +41,7 @@ function associate() {
   TaskReponse.belongsTo(Task, {
     foreignKey: 'taskId'
   })
-
+*/
   
   
   //console.log(BusinessSpot.associations)
@@ -63,21 +61,20 @@ async function authenticateConnection(connection) {
 }
 
 export {
-  User,
-  Task,
-  TaskReponse,
+ // User,
+  //Task,
+  //TaskReponse,
   PasswordReset,
   EmailandTelValidation,
-  AsignTask
 }
 
 export function init(connection) {
-  initUser(connection);
-  initTask(connection);
-  initTaskReponse(connection);
+  //initUser(connection);
+  //initTask(connection);
+ // initTaskReponse(connection);
   initPasswordReset(connection)
   initEmailandTelValidation(connection)
-  initAsignTask(connection)
+  //initAsignTask(connection)
   associate();
   authenticateConnection(connection)
 }

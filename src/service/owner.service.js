@@ -51,7 +51,7 @@ class UserService {
 
       const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
 
-      console.log(gameAccount)
+      console.log(gameAccount)       
 /*
       console.log("wallet.publicKey")
       console.log(wallet.publicKey)

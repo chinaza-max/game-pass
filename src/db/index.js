@@ -104,14 +104,14 @@ this.sequelize.query(disableForeignKeyChecks)
 
     const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
     const secretKey = Uint8Array.from(secret)
-    const wallet = anchor.web3.Keypair.fromSecretKey(secretKey)
-  
+    const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
     
-    const provider = new anchor.AnchorProvider(connection, new Wallet(wallet), {});
+    
+    const provider = new anchor.AnchorProvider(connection, new Wallet(Keypair), {});
     const program = new anchor.Program(idl, programId, provider);
     
     DB.program=program
-    DB.userKeypair=wallet
+    DB.userKeypair=Keypair
     DB.connection=connection
 
   }

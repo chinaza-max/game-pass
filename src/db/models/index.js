@@ -1,6 +1,7 @@
 import {  Sequelize } from "sequelize";
 import PasswordReset, { init as initPasswordReset } from "./passwordReset.js";
 import EmailandTelValidation, { init as initEmailandTelValidation } from "./emailAndTelValidation.js";
+import Games, { init as initGames} from "./games.js";
 
 
 
@@ -63,7 +64,7 @@ async function authenticateConnection(connection) {
 export {
  // User,
   //Task,
-  //TaskReponse,
+  Games,
   PasswordReset,
   EmailandTelValidation,
 }
@@ -74,7 +75,7 @@ export function init(connection) {
  // initTaskReponse(connection);
   initPasswordReset(connection)
   initEmailandTelValidation(connection)
-  //initAsignTask(connection)
+  initGames(connection)
   associate();
   authenticateConnection(connection)
 }

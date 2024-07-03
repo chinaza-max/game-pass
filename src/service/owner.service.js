@@ -8,7 +8,7 @@ import bcrypt from'bcrypt';
 //import mailService from "./mail.service.js";
 import DB from '../db/index.js';
 import { findProgramAddressSync } from '@project-serum/anchor/dist/cjs/utils/pubkey.js'
-import {  SystemProgram } from '@solana/web3.js';
+import {  PublicKey, SystemProgram } from '@solana/web3.js';
 import * as anchor from '@project-serum/anchor';
 import {Wallet} from '@project-serum/anchor';
 
@@ -33,13 +33,15 @@ class UserService {
 
     try {
      
-      const {userKeypair, program }=DB.getBlockChainData()
 
-      const wallet=userKeypair
+  
+      const {userKeypair, program, connection}=DB.getBlockChainData()
+
       const [gamePassPDA, bump] = await findProgramAddressSync(
-        [Buffer.from('game_pass'), wallet.publicKey.toBuffer()],
+        [Buffer.from('game_pass'), userKeypair.publicKey.toBuffer()],
         program.programId
       );
+      
 /*
       console.log(userKeypair.publicKey.toString())
 
@@ -47,26 +49,29 @@ class UserService {
       console.log(gamePassPDA.toString())
       console.log(bump[0])
       console.log("gamePassPDA")*/
-      //const gamePassAccount = await connection.getAccountInfo(gamePassPDA);
 
-      const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
+    /*  const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
 
-      console.log(gameAccount)       
-/*
-      console.log("wallet.publicKey")
-      console.log(wallet.publicKey)
-      console.log("wallet.publicKey")
+      console.log(gameAccount)   */ 
+
+      //const gamePassAccount = await connection.getAccountInfo(new PublicKey("5XpUCd6TWzWLyPVGkU8VkdW3hM7m13akUdSNCZEHNmrc"));
+      //const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
+      //const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
+
+      console.log(gamePassAccount)
+
+      return
 
       const tx = await program.methods.initializeMainAccount()
         .accounts({
           gamePass: gamePassPDA,      
-          user: wallet.publicKey,
+          user: userKeypair.publicKey,
           systemProgram: SystemProgram.programId,
           rent:anchor.web3.SYSVAR_RENT_PUBKEY       
         }
-      ).signers([wallet])
+      ).signers([userKeypair])
       .rpc(); 
-      console.log(tx)*/
+      console.log(tx)
 
     } catch (error) {
       console.log(error)

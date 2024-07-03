@@ -38,7 +38,7 @@ class Routes {
 
 
     this.router.all("*", (req, res) => {
-      res.status(404).json({
+      res.status(404).json({ 
         status: 404,
         message: 'Resource not found.',
       });

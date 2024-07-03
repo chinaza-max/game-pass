@@ -4,14 +4,23 @@ class GameUtil {
 
   
   verifyHandleInitializeGame=Joi.object({
-    user: Joi.array().items(Joi.number()).required(),
-    uniqueId: Joi.number().required(),
-    gameName: Joi.string().required(),
-    createdAt: Joi.number().required()
+    signedTransaction: Joi.string().base64().required()
   });
 
+  verifyHandleInitializeUserGameAccount=Joi.object({
+    signedTransaction: Joi.string().base64().required()
+  });
 
-
+  verifyHandleGetTrasaction=Joi.object({
+    userPublicKey: Joi.string().required(),
+    gameName: Joi.string().required(),
+    type: Joi.string().required(),
+    uniqueId: Joi.when('type', {
+      is: 'initializeUserGameAccount',
+      then: Joi.number().integer().min(0).required(),
+      otherwise: Joi.string().optional()
+    })
+  });
 
 }
 

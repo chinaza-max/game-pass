@@ -13,6 +13,9 @@ class GameRoutes extends GameController {
   routes() {
 
     this.router.post("/initializeGame", this.initializeGame);
+    this.router.post("/getTrasaction", this.getTrasaction);
+    this.router.post("/initializeUserGameAccount", this.initializeUserGameAccount);
+    //this.router.post("/initializeUserGameAccount", this.initializeUserGameAccount);
 
    /* this.router.post("/createTask",uploadHandler.image.single('image'), this.createTask);
     this.router.post("/deleteTask", this.deleteTask);

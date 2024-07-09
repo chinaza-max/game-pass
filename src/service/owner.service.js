@@ -35,15 +35,15 @@ class UserService {
      
 
   
-      const {userKeypair, program, connection}=DB.getBlockChainData()
+      const {gamePassKeypair, program, connection}=DB.getBlockChainData()
 
       const [gamePassPDA, bump] = await findProgramAddressSync(
-        [Buffer.from('game_pass'), userKeypair.publicKey.toBuffer()],
+        [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
         program.programId
       );
       
 /*
-      console.log(userKeypair.publicKey.toString())
+      console.log(gamePassKeypair.publicKey.toString())
 
       console.log("gamePassPDA")
       console.log(gamePassPDA.toString())
@@ -65,11 +65,11 @@ class UserService {
       const tx = await program.methods.initializeMainAccount()
         .accounts({
           gamePass: gamePassPDA,      
-          user: userKeypair.publicKey,
+          user: gamePassKeypair.publicKey,
           systemProgram: SystemProgram.programId,
           rent:anchor.web3.SYSVAR_RENT_PUBKEY       
         }
-      ).signers([userKeypair])
+      ).signers([gamePassKeypair])
       .rpc(); 
       console.log(tx)
 

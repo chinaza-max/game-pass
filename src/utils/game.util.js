@@ -12,16 +12,28 @@ class GameUtil {
   });
 
   verifyHandleGetTrasaction=Joi.object({
-    userPublicKey: Joi.string().required(),
-    gameName: Joi.string().required(),
     type: Joi.string().required(),
+    userPublicKey: Joi.when('type', {
+      is: 'initializeGame',
+      then: Joi.string().required(),
+      otherwise: Joi.string().not()
+    }),
+    gameName: Joi.when('type', {
+      is: 'initializeGame',
+      then: Joi.string().required(),
+      otherwise: Joi.string().not()
+    }),
+    gamerPublicKey: Joi.when('type', {
+      is: 'initializeUserGameAccount',
+      then: Joi.string().required(),
+      otherwise: Joi.string().optional()
+    }),
     uniqueId: Joi.when('type', {
       is: 'initializeUserGameAccount',
       then: Joi.number().integer().min(0).required(),
       otherwise: Joi.string().optional()
     })
   });
-
 }
 
 export default new GameUtil();

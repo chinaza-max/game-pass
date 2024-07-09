@@ -33,22 +33,38 @@ class UserService {
   async handleGetTrasaction(data) {
     let { 
       userPublicKey,
+      gamerPublicKey,
       gameName,
       uniqueId,
       type
     } = await gameUtil.verifyHandleGetTrasaction.validateAsync(data);
 
 
+    if(userPublicKey){
+      try {
+        new PublicKey(userPublicKey)
+      } catch (error) {
+        throw new BadRequestError("this is an invalid user publick key")
+      }
+    }
+   
+
+    if(gamerPublicKey){
+      try {
+        new PublicKey(gamerPublicKey)
+      } catch (error) {
+        throw new BadRequestError("this is an invalid gamer publick key")
+      }
+    }
+
     try {
 
-      const {userKeypair, program,  connection}=DB.getBlockChainData()
+      const {gamePassKeypair, program,  connection}=DB.getBlockChainData()
 
       const createdAt = Date.now();
 
       if(type=="initializeGame"){
-        
-        //const id = crypto.randomBytes(16).toString('hex');
-        
+                
         const uniqueId2 = Math.floor(Date.now() / 1000); 
         const uniqueIdBuffer = Buffer.alloc(8);
         uniqueIdBuffer.writeUInt32LE(uniqueId2, 0)
@@ -72,7 +88,7 @@ class UserService {
         );
 
         const [gamePassPDA] = await findProgramAddressSync(
-          [Buffer.from('game_pass'), userKeypair.publicKey.toBuffer()],
+          [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
           program.programId
         );
 
@@ -110,12 +126,21 @@ class UserService {
         return { transaction: serializedTransaction };
       }
       else if(type=="initializeUserGameAccount"){
-        //const id = crypto.randomBytes(16).toString('hex');
+
+        const result=this.GamesModel.findOne({
+          where:{
+            uniqueId
+          }
+        })
+
+        if(!result){
+          throw new NotFoundError("Game Id does not exist")
+        }
 
         const uniqueIdBuffer = Buffer.alloc(8);
         uniqueIdBuffer.writeUInt32LE(uniqueId, 0)
 
-      const {userKeypair, program,  connection}=DB.getBlockChainData()
+        const {gamePassKeypair, program,  connection}=DB.getBlockChainData()
 
       const [gameAcctPDA] = await findProgramAddressSync(
         [Buffer.from('game_acct'), new PublicKey(userPublicKey).toBuffer(), uniqueIdBuffer],
@@ -124,12 +149,12 @@ class UserService {
 
       const [userGameAcctPDA] = await findProgramAddressSync(
         [Buffer.from('user_game_acct')], new PublicKey(gameAcctPDA).toBuffer(),
-        new PublicKey(userPublicKey).toBuffer(),
+        new PublicKey(gamerPublicKey).toBuffer(),
         program.programId
       );
 
       const [gamePassPDA] = await findProgramAddressSync(
-        [Buffer.from('game_pass'), userKeypair.publicKey.toBuffer()],
+        [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
         program.programId
       );
      
@@ -143,7 +168,7 @@ class UserService {
                 userGameAcct: userGameAcctPDA,
                 gamePass: gamePassPDA,
                 gameAcct: gameAcctPDA,
-                user: userPublicKey,
+                user: gamerPublicKey,
                 systemProgram: SystemProgram.programId,
                 rent: anchor.web3.SYSVAR_RENT_PUBKEY
           },
@@ -190,6 +215,94 @@ class UserService {
     }
 
   }
+
+  
+  async handleGetSigleGameAccount(data) {
+    let { 
+      signedTransaction
+    } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
+
+    try {   
+
+      const { connection }=DB.getBlockChainData() 
+
+      const serializedTransaction = Buffer.from(signedTransaction, 'base64');
+      
+      const txnSignature = await sendAndConfirmRawTransaction(connection, serializedTransaction);
+      
+     return { transaction: txnSignature };
+
+    } catch (error) {
+      console.error('Error initializing game:', error);
+    }
+
+  }
+
+
+  
+  async handleGetAllUserGameAccount(data) {
+    let { 
+      signedTransaction
+    } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
+
+    try {   
+
+      const { connection }=DB.getBlockChainData() 
+
+      const serializedTransaction = Buffer.from(signedTransaction, 'base64');
+      
+      const txnSignature = await sendAndConfirmRawTransaction(connection, serializedTransaction);
+      
+     return { transaction: txnSignature };
+
+    } catch (error) {
+      console.error('Error initializing game:', error);
+    }
+
+  }
+  
+  async handleGetSigleUserGameAccount(data) {
+    let { 
+      signedTransaction
+    } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
+
+    try {   
+
+      const { connection }=DB.getBlockChainData() 
+
+      const serializedTransaction = Buffer.from(signedTransaction, 'base64');
+      
+      const txnSignature = await sendAndConfirmRawTransaction(connection, serializedTransaction);
+      
+     return { transaction: txnSignature };
+
+    } catch (error) {
+      console.error('Error initializing game:', error);
+    }
+
+  }
+    
+  async handleGetAllGameAccount(data) {
+    let { 
+      signedTransaction
+    } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
+
+    try {   
+
+      const { connection }=DB.getBlockChainData() 
+
+      const serializedTransaction = Buffer.from(signedTransaction, 'base64');
+      
+      const txnSignature = await sendAndConfirmRawTransaction(connection, serializedTransaction);
+      
+     return { transaction: txnSignature };
+
+    } catch (error) {
+      console.error('Error initializing game:', error);
+    }
+
+  }
+
 
   async handleInitializeGame(data) {
     let { 

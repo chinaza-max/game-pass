@@ -32,7 +32,33 @@ export default class GameController {
   }
 
 
+  
+  async getAllUserGameAccount(
+    req,
+    res,
+    next
+  ){
+    const data=req.body
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        const response= await gameService.handleGetAllUserGameAccount(my_bj);
 
+      return res.status(200).json({
+        status: 200,
+        message: "success.",
+        data: response
+      });
+
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
 
   async initializeUserGameAccount(
     req,
@@ -48,6 +74,88 @@ export default class GameController {
         }
                           
         const response= await gameService.handleInitializeUserGameAccount(my_bj);
+
+      return res.status(200).json({
+        status: 200,
+        message: "success.",
+        data: response
+      });
+
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
+
+  
+  async getSigleUserGameAccount(
+    req,
+    res,
+    next
+  ){
+    const data=body.query
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        const response= await gameService.handleGetSigleUserGameAccount(my_bj);
+
+      return res.status(200).json({
+        status: 200,
+        message: "success.",
+        data: response
+      });
+
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
+
+  async getAllGameAccount(
+    req,
+    res,
+    next
+  ){
+    const data=body.query
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        const response= await gameService.handleGetAllGameAccount(my_bj);
+
+      return res.status(200).json({
+        status: 200,
+        message: "success.",
+        data: response
+      });
+
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
+
+  async getSigleGameAccount(
+    req,
+    res,
+    next
+  ){
+    const data=body.query
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        const response= await gameService.handleGetSigleGameAccount(my_bj);
 
       return res.status(200).json({
         status: 200,

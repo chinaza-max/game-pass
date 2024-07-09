@@ -106,17 +106,17 @@ this.sequelize.query(disableForeignKeyChecks)
     const secretKey = Uint8Array.from(secret)
     const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
     
-    
     const provider = new anchor.AnchorProvider(connection, new Wallet(Keypair), {});
     const program = new anchor.Program(idl, programId, provider);
-    
+     
     DB.program=program
     DB.userKeypair=Keypair
     DB.connection=connection
 
   }
+  
   getBlockChainData() {
-    return {userKeypair:DB.userKeypair,program:DB.program,connection:DB.connection};
+    return {gamePassKeypair:DB.userKeypair,program:DB.program,connection:DB.connection};
   }
 
 

@@ -4,7 +4,9 @@ class GameUtil {
 
   
   verifyHandleInitializeGame=Joi.object({
-    signedTransaction: Joi.string().base64().required()
+    signedTransaction: Joi.string().base64().required(),
+    userPublicKey: Joi.string().required(),
+    uniqueId:Joi.number().integer().min(0).required(),
   });
 
   verifyHandleInitializeUserGameAccount=Joi.object({
@@ -26,12 +28,12 @@ class GameUtil {
     gamerPublicKey: Joi.when('type', {
       is: 'initializeUserGameAccount',
       then: Joi.string().required(),
-      otherwise: Joi.string().optional()
+      otherwise: Joi.string().not()
     }),
     uniqueId: Joi.when('type', {
       is: 'initializeUserGameAccount',
       then: Joi.number().integer().min(0).required(),
-      otherwise: Joi.string().optional()
+      otherwise: Joi.string().not()
     })
   });
 }

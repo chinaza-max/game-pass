@@ -21,15 +21,13 @@ import {
   SystemError
 
 } from "../errors/index.js";
+import { Console } from "console";
 
 class UserService {
   EmailandTelValidationModel=EmailandTelValidation 
   GamesModel=Games
 
 
-
-
-  
   async handleGetTrasaction(data) {
     let { 
       userPublicKey,
@@ -39,27 +37,42 @@ class UserService {
       type
     } = await gameUtil.verifyHandleGetTrasaction.validateAsync(data);
 
+    const {gamePassKeypair, program,  connection}=DB.getBlockChainData()
+
+    const gameAccount = await this.getGameAccountInfor("5XpUCd6TWzWLyPVGkU8VkdW3hM7m13akUdSNCZEHNmrc", program);
+
+    console.log("getGameAccountInfor")
+    console.log(gameAccount)
+    console.log("getGameAccountInfor")
+    
+    return
 
     if(userPublicKey){
       try {
         new PublicKey(userPublicKey)
       } catch (error) {
-        throw new BadRequestError("this is an invalid user publick key")
+        throw new BadRequestError("this is an invalid user public key")
       }
     }
    
+
+    if(gameName){
+      const result =await this.checkIfthisUserHastheGameName(userPublicKey, gameName, program)
+      if(result==true){       
+        throw new ConflictError("Game with this name already exist")
+      }  
+    }
 
     if(gamerPublicKey){
       try {
         new PublicKey(gamerPublicKey)
       } catch (error) {
-        throw new BadRequestError("this is an invalid gamer publick key")
+        throw new BadRequestError("this is an invalid gamer public key")
       }
     }
 
     try {
 
-      const {gamePassKeypair, program,  connection}=DB.getBlockChainData()
 
       const createdAt = Date.now();
 
@@ -68,7 +81,6 @@ class UserService {
         const uniqueId2 = Math.floor(Date.now() / 1000); 
         const uniqueIdBuffer = Buffer.alloc(8);
         uniqueIdBuffer.writeUInt32LE(uniqueId2, 0)
-
 
         const result = await this.GamesModel.findOne({
           where: {
@@ -81,75 +93,67 @@ class UserService {
 
         if (result) new ConflictError("Game with the id exist contact support")
     
+          const [gameAcctPDA] = await findProgramAddressSync(
+            [Buffer.from('game_acct'), new PublicKey(userPublicKey).toBuffer(),uniqueIdBuffer],
+            program.programId
+          );
 
-        const [gameAcctPDA] = await findProgramAddressSync(
-          [Buffer.from('game_acct'), new PublicKey(userPublicKey).toBuffer(),uniqueIdBuffer],
-          program.programId
-        );
+          const [gamePassPDA] = await findProgramAddressSync(
+            [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
+            program.programId
+          );
 
-        const [gamePassPDA] = await findProgramAddressSync(
-          [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
-          program.programId
-        );
+          const transaction = new Transaction();
 
-        const transaction = new Transaction();
+          const instruction = program.instruction.initializeGame(
+            new BN(uniqueId2),
+            gameName,
+            new BN(createdAt), 
+            {
+                accounts: {
+                    gameAcct: gameAcctPDA,
+                    gamePass: gamePassPDA, 
+                    user: userPublicKey,
+                    systemProgram: SystemProgram.programId,
+                    rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+              },
+            }
+          );
 
-        const instruction = program.instruction.initializeGame(
-          new BN(uniqueId2),
-          gameName,
-          new BN(createdAt), 
-          {
-              accounts: {
-                  gameAcct: gameAcctPDA,
-                  gamePass: gamePassPDA, 
-                  user: userPublicKey,
-                  systemProgram: SystemProgram.programId,
-                  rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-            },
-          }
-        );
+          const tx=transaction.add(instruction)
+          tx.feePayer = new PublicKey(userPublicKey);  
 
-        const tx=transaction.add(instruction)
-        tx.feePayer = new PublicKey(userPublicKey);  
+          const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
+          tx.recentBlockhash = blockHash;
 
-        const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
-        tx.recentBlockhash = blockHash;
+          const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
 
-        const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
-
-        if(serializedTransaction){
-          this.GamesModel.create({
-            GameOwnerPublicKey:userPublicKey,
-            uniqueId: uniqueId2 
-          });
-        }
-        return { transaction: serializedTransaction };
+          return { transaction: serializedTransaction , uniqueId: uniqueId2};
       }
       else if(type=="initializeUserGameAccount"){
 
-        const result=this.GamesModel.findOne({
+        const result=await this.GamesModel.findOne({
           where:{
             uniqueId
           }
         })
 
         if(!result){
-          throw new NotFoundError("Game Id does not exist")
+          throw new NotFoundError("Game Unique Id does not exist")
         }
 
         const uniqueIdBuffer = Buffer.alloc(8);
         uniqueIdBuffer.writeUInt32LE(uniqueId, 0)
 
-        const {gamePassKeypair, program,  connection}=DB.getBlockChainData()
 
       const [gameAcctPDA] = await findProgramAddressSync(
-        [Buffer.from('game_acct'), new PublicKey(userPublicKey).toBuffer(), uniqueIdBuffer],
+        [Buffer.from('game_acct'), new PublicKey(result.GameOwnerPublicKey).toBuffer(), uniqueIdBuffer],
         program.programId
       );
 
       const [userGameAcctPDA] = await findProgramAddressSync(
-        [Buffer.from('user_game_acct')], new PublicKey(gameAcctPDA).toBuffer(),
-        new PublicKey(gamerPublicKey).toBuffer(),
+        [Buffer.from('user_game_acct'), new PublicKey(gameAcctPDA).toBuffer(),
+        new PublicKey(gamerPublicKey).toBuffer()],
         program.programId
       );
 
@@ -157,7 +161,8 @@ class UserService {
         [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
         program.programId
       );
-     
+
+
       const transaction = new Transaction();
 
       const instruction = program.instruction.initializeUserGameAccount(
@@ -176,7 +181,7 @@ class UserService {
       );
 
       const tx=transaction.add(instruction)
-      tx.feePayer = new PublicKey(userPublicKey);  
+      tx.feePayer = new PublicKey(gamerPublicKey);  
 
       const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
       tx.recentBlockhash = blockHash;
@@ -187,7 +192,6 @@ class UserService {
 
     } catch (error) {
       console.error('Error initialize User Game Account:', error);
-
     }
 
   }
@@ -197,6 +201,7 @@ class UserService {
   
   async handleInitializeUserGameAccount(data) {
     let { 
+      
       signedTransaction
     } = await gameUtil.verifyHandleInitializeUserGameAccount.validateAsync(data);
 
@@ -306,7 +311,9 @@ class UserService {
 
   async handleInitializeGame(data) {
     let { 
-      signedTransaction
+      userPublicKey,
+      signedTransaction,
+      uniqueId
     } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
 
     try {   
@@ -317,11 +324,86 @@ class UserService {
       
       const txnSignature = await sendAndConfirmRawTransaction(connection, serializedTransaction);
       
+      if(txnSignature){
+        this.GamesModel.create({
+          GameOwnerPublicKey:userPublicKey,
+          uniqueId: uniqueId
+        });
+      }
      return { transaction: txnSignature };
 
     } catch (error) {
       console.error('Error initializing game:', error);
     }
+
+  }
+
+  async checkIfthisUserHastheGameName(userPublicKey, gameName, program){
+
+    let myState=false
+
+
+
+
+    const result = await this.GamesModel.findAll({
+      where: 
+          { GameOwnerPublicKey:userPublicKey },
+    });
+    
+    if(result.length==0){
+        return myState
+    }else{
+
+      for (let index = 0; index < result.length; index++) {
+        const element = result[index];
+          const uniqueIdBuffer = Buffer.alloc(8);
+          uniqueIdBuffer.writeUInt32LE(element.uniqueId, 0)
+    
+          const [gameAcctPDA] = await findProgramAddressSync(
+            [Buffer.from('game_acct'), new PublicKey(userPublicKey).toBuffer(),uniqueIdBuffer],
+            program.programId
+          );
+
+          console.log( program.account ) 
+          
+          try {
+            const gameAccount = await program.account.gameAccts.fetch(gameAcctPDA);
+      
+            if (gameAccount.gameName == gameName) {
+              myState = true;
+              break;
+            }
+          } catch (error) {
+            if (error.message.includes("Account does not exist or has no data")) {
+              //console.warn(`Account does not exist or has no data: ${gameAcctPDA.toString()}`);
+              // Continue to the next iteration if the account does not exist
+              continue;
+            } else {
+              // If it's a different error, rethrow it
+              throw error;
+            }
+          }  
+      }
+    }
+    return myState
+  }
+
+  async getGamePassAccounts(program ,gamePassKeypair){
+
+    const [gamePassPDA, bump] = await findProgramAddressSync(
+      [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
+      program.programId
+    );
+
+    const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
+
+    return gameAccount;
+
+  }
+  async getGameAccountInfor(pubkeyKey, program){
+
+    const gameAccountInfor = await program.account.gameAccts.fetch(pubkeyKey);
+    return gameAccountInfor;
 
   }
 

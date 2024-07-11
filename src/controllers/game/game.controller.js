@@ -75,11 +75,19 @@ export default class GameController {
                           
         const response= await gameService.handleInitializeUserGameAccount(my_bj);
 
-      return res.status(200).json({
-        status: 200,
-        message: "success.",
-        data: response
-      });
+        if(response){
+          return res.status(200).json({
+            status: 200,
+            message: "success.",
+            data: response
+          });
+        }else{
+          return res.status(200).json({
+            status: 200,
+            message: "account initialization failed.",
+          });
+        }
+      
 
     } catch (error) {
       console.log(error)

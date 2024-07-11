@@ -11,6 +11,7 @@ import { findProgramAddressSync } from '@project-serum/anchor/dist/cjs/utils/pub
 import {  PublicKey, SystemProgram } from '@solana/web3.js';
 import * as anchor from '@project-serum/anchor';
 import {Wallet} from '@project-serum/anchor';
+import BN from 'bn.js';
 
 
 
@@ -54,12 +55,18 @@ class UserService {
 
       console.log(gameAccount)   */ 
 
+      //below is game accout
       //const gamePassAccount = await connection.getAccountInfo(new PublicKey("5XpUCd6TWzWLyPVGkU8VkdW3hM7m13akUdSNCZEHNmrc"));
+      //const gamePassAccount = await connection.getAccountInfo(new PublicKey("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z"));
+      
+      //const gamePassAccount = await program.account.userGameAccount.fetch("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z");
+      const gamePassAccount = await program.account  //.gameAccts.fetch("5XpUCd6TWzWLyPVGkU8VkdW3hM7m13akUdSNCZEHNmrc");
       //const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
-      //const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
-
+      //const gamePassAccount = await program.account.userGameAcct.fetch("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z");
+      //const gamePassAccount = await connection.getAccountInfo(new PublicKey("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z"));
+  
       console.log(gamePassAccount)
-
+   
       return
 
       const tx = await program.methods.initializeMainAccount()

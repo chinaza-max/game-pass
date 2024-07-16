@@ -100,8 +100,6 @@ this.sequelize.query(disableForeignKeyChecks)
 
     const programId = new PublicKey(process.env.PROGRAM_ID);
     const connection = new Connection(clusterApiUrl('devnet'));
-
-
     const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
     const secretKey = Uint8Array.from(secret)
     const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)

@@ -30,19 +30,21 @@ class UserService {
 
   async handleGetTrasaction(data) {
     let { 
-      userPublicKey,
-      gamerPublicKey,
+      gameOwnerPublicKey,
       gameName,
       gameId,
+      userGameAcctPublicKey,
+      score,
+      level,
       type
     } = await gameUtil.verifyHandleGetTrasaction.validateAsync(data);
   
     const {gamePassKeypair, program, connection}=DB.getBlockChainData()
     
 
-    if(userPublicKey){
+    if(gameOwnerPublicKey){
       try {
-        new PublicKey(userPublicKey)
+        new PublicKey(gameOwnerPublicKey)
       } catch (error) {
         throw new BadRequestError("this is an invalid user public key")
       }
@@ -50,19 +52,29 @@ class UserService {
    
 
     if(gameName){
-      const result =await this.checkIfthisUserHastheGameName(userPublicKey, gameName, program)
+      const result =await this.checkIfthisUserHastheGameName(gameOwnerPublicKey, gameName, program)
       if(result==true){       
         throw new ConflictError("Game with this name already exist")
       }  
     }
 
-    if(gamerPublicKey){
+    if(userGameAcctPublicKey){
       try {
-        new PublicKey(gamerPublicKey)
+        new PublicKey(userGameAcctPublicKey)
       } catch (error) {
         throw new BadRequestError("this is an invalid gamer public key")
       }
     }
+
+    if(userGameAcctPublicKey){
+      try {
+        new PublicKey(userGameAcctPublicKey)
+      } catch (error) {
+        throw new BadRequestError("this is an invalid User Game Account public key")
+      }
+    }
+
+    
 
     try {
 
@@ -78,7 +90,7 @@ class UserService {
         const result = await this.GamesModel.findOne({
           where: {
             [Op.and]: [
-              { GameOwnerPublicKey:userPublicKey },
+              { GameOwnerPublicKey:gameOwnerPublicKey },
               { uniqueId: uniqueId2 }
             ]
           }
@@ -87,7 +99,7 @@ class UserService {
         if (result) new ConflictError("Game with the id exist contact support")
     
           const [gameAcctPDA] = await findProgramAddressSync(
-            [Buffer.from('game_acct'), new PublicKey(userPublicKey).toBuffer(),uniqueIdBuffer],
+            [Buffer.from('game_acct'), new PublicKey(gameOwnerPublicKey).toBuffer(),uniqueIdBuffer],
             program.programId
           );
 
@@ -106,7 +118,7 @@ class UserService {
                 accounts: {
                     gameAcct: gameAcctPDA,
                     gamePass: gamePassPDA, 
-                    user: userPublicKey,
+                    user: gameOwnerPublicKey,
                     systemProgram: SystemProgram.programId,
                     rent: anchor.web3.SYSVAR_RENT_PUBKEY,
               },
@@ -114,7 +126,7 @@ class UserService {
           );
 
           const tx=transaction.add(instruction)
-          tx.feePayer = new PublicKey(userPublicKey);  
+          tx.feePayer = new PublicKey(gameOwnerPublicKey);  
 
           const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
           tx.recentBlockhash = blockHash;
@@ -130,9 +142,7 @@ class UserService {
         const uniqueId=result2.uniqueId.toString()
         const GameOwnerPublicKey=new PublicKey(result2.owner).toString()
 
-        console.log(result2.owner)
-        console.log(GameOwnerPublicKey)
-
+    
         if(!result){
           throw new NotFoundError("gameId does not exist")
         }
@@ -148,7 +158,7 @@ class UserService {
       
       const [userGameAcctPDA] = await findProgramAddressSync(
         [Buffer.from('user_game_acct'), new PublicKey(gameAcctPDA).toBuffer(),
-        new PublicKey(gamerPublicKey).toBuffer()],
+        new PublicKey(userGameAcctPublicKey).toBuffer()],
         program.programId
       );
       
@@ -167,7 +177,7 @@ class UserService {
                 userGameAcct: userGameAcctPDA,
                 gamePass: gamePassPDA,
                 gameAcct: gameAcctPDA,
-                user: gamerPublicKey,
+                user: userGameAcctPublicKey,
                 systemProgram: SystemProgram.programId,
                 rent: anchor.web3.SYSVAR_RENT_PUBKEY
           },
@@ -175,14 +185,69 @@ class UserService {
       );
 
       const tx=transaction.add(instruction)
-      tx.feePayer = new PublicKey(gamerPublicKey);  
+      tx.feePayer = new PublicKey(userGameAcctPublicKey);  
 
       const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
       tx.recentBlockhash = blockHash;
     
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
       return { transaction: serializedTransaction };
-    }
+      }
+      else if(type=="updateUserScore"){
+
+       const UserGameAccountInfor=await this.getUserGameAccountInfor(userGameAcctPublicKey, program)
+       const GameAccountInfor=await this.getGameAccountInfor(UserGameAccountInfor.gameId, program)
+       const transaction = new Transaction();
+         
+        const instruction = program.instruction.updateUserScore(
+          new BN(score),
+          {
+              accounts: {
+                userGameAcct: userGameAcctPublicKey,
+                gameAcct: UserGameAccountInfor.gameId,
+                signer: new PublicKey(GameAccountInfor.owner).toString()
+            },
+        })   
+
+        const tx=transaction.add(instruction)
+        tx.feePayer = new PublicKey(GameAccountInfor.owner);  
+  
+        const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
+        tx.recentBlockhash = blockHash;
+      
+        const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
+        return { transaction: serializedTransaction };
+
+
+      }
+      else if(type=="updateUserLevel"){
+
+        const UserGameAccountInfor=await this.getUserGameAccountInfor(userGameAcctPublicKey, program)
+        const GameAccountInfor=await this.getGameAccountInfor(UserGameAccountInfor.gameId, program)
+        const transaction = new Transaction();
+          
+         const instruction = program.instruction.updateUserLevel(
+           new BN(level),
+           {
+               accounts: {
+                 userGameAcct: userGameAcctPublicKey,
+                 gameAcct: UserGameAccountInfor.gameId,
+                 signer: new PublicKey(GameAccountInfor.owner).toString()
+             },
+         })   
+ 
+         const tx=transaction.add(instruction)
+         tx.feePayer = new PublicKey(GameAccountInfor.owner);  
+   
+         const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
+         tx.recentBlockhash = blockHash;
+       
+         const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
+         return { transaction: serializedTransaction };
+ 
+ 
+      }
+     
 
     } catch (error) {
       console.error('Error initialize User Game Account:', error);
@@ -191,8 +256,34 @@ class UserService {
   }
 
 
+  async handleUserGameAccountActions(data) {
+    let { 
+      signedTransaction,
+      type
+    } = await gameUtil.verifyHandleUserGameAccountActions.validateAsync(data);
 
-  
+    try { 
+
+      const { connection }=DB.getBlockChainData() 
+
+      const serializedTransaction = Buffer.from(signedTransaction, 'base64');
+      
+      const txnSignature = await sendAndConfirmRawTransaction(connection, serializedTransaction);
+      
+     return { transaction: txnSignature};
+
+    } catch (error) {
+   
+      const logs = error.transactionLogs;
+      if (logs.some(log => log.includes("Error Code: UserAlreadyRegistered"))) {
+          throw new BadRequestError("User is already registered. Please try with a different account.");
+      } else {
+          throw new BadRequestError("Transaction failed with error:", err.message)
+        }
+    }
+
+  }
+
   async handleInitializeUserGameAccount(data) {
     let { 
       signedTransaction
@@ -243,7 +334,6 @@ class UserService {
   }
 
 
-  
   async handleGetAllUserGameAccount(data) {
     let { 
       gameId
@@ -272,7 +362,8 @@ class UserService {
         const accountPDA = gamePassAccount.userGameAccount[index].accountId;
         const userGameAccount= await this.getUserGameAccountInfor(accountPDA, program)
         if(userGameAccount.gameId==gameId){
-          userGameAccounts.push(userGameAccount)
+          userGameAccounts.push({...userGameAccount,"level":Number(userGameAccount.level.toString()),
+            "score":Number(userGameAccount.score.toString())})
         }
       }
 
@@ -311,13 +402,13 @@ class UserService {
   async handleGetAllGameAccount(data) {
     let { 
       type, 
-      userPublicKey
+      gameOwnerPublicKey
     } = await gameUtil.verifyHandleGetAllGameAccount.validateAsync(data);
 
     const {gamePassKeypair, program, connection}=DB.getBlockChainData()
-    if(userPublicKey){
+    if(gameOwnerPublicKey){
       try {
-        new PublicKey(userPublicKey)
+        new PublicKey(gameOwnerPublicKey)
       } catch (error) {
         throw new BadRequestError("this is an invalid user PublicKey")
       }
@@ -354,7 +445,7 @@ class UserService {
   
                   const accountGameAccountInfo= await this.getGameAccountInfor(element.gameId,program)
                   
-                  if(new PublicKey(accountGameAccountInfo.owner).toString()==userPublicKey){
+                  if(new PublicKey(accountGameAccountInfo.owner).toString()==gameOwnerPublicKey){
                     gameAccount.push(accountGameAccountInfo)
                   }
   
@@ -375,7 +466,7 @@ class UserService {
 
   async handleInitializeGame(data) {
     let { 
-      userPublicKey,
+      gameOwnerPublicKey,
       signedTransaction,
       uniqueId
     } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
@@ -390,7 +481,7 @@ class UserService {
       
       if(txnSignature){
         this.GamesModel.create({
-          GameOwnerPublicKey:userPublicKey,
+          GameOwnerPublicKey:gameOwnerPublicKey,
           uniqueId: uniqueId
         });
       }
@@ -402,7 +493,7 @@ class UserService {
 
   }
 
-  async checkIfthisUserHastheGameName(userPublicKey, gameName, program){
+  async checkIfthisUserHastheGameName(gameOwnerPublicKey, gameName, program){
 
     let myState=false
 
@@ -411,7 +502,7 @@ class UserService {
 
     const result = await this.GamesModel.findAll({
       where: 
-          { GameOwnerPublicKey:userPublicKey },
+          { GameOwnerPublicKey:gameOwnerPublicKey },
     });
     
     if(result.length==0){
@@ -424,11 +515,9 @@ class UserService {
           uniqueIdBuffer.writeUInt32LE(element.uniqueId, 0)
     
           const [gameAcctPDA] = await findProgramAddressSync(
-            [Buffer.from('game_acct'), new PublicKey(userPublicKey).toBuffer(),uniqueIdBuffer],
+            [Buffer.from('game_acct'), new PublicKey(gameOwnerPublicKey).toBuffer(),uniqueIdBuffer],
             program.programId
           );
-
-          console.log( program.account ) 
           
           try {
             const gameAccount = await program.account.gameAccts.fetch(gameAcctPDA);
@@ -464,6 +553,8 @@ class UserService {
     return gameAccount;
 
   }
+
+  
   async getGameAccountInfor(pubkeyKey, program){
 
     const gameAccountInfor = await program.account.gameAccts.fetch(pubkeyKey);

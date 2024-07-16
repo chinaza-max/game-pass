@@ -7,6 +7,8 @@ import serverConfig from "../config/server.js";
 import {  Op, Sequelize } from "sequelize";
 import mailService from "../service/mail.service.js";
 import crypto from 'crypto';
+import DB from '../db/index.js';
+import { findProgramAddressSync } from '@project-serum/anchor/dist/cjs/utils/pubkey.js'
 
 
 import {
@@ -21,53 +23,37 @@ class UserService {
   EmailandTelValidationModel=EmailandTelValidation
 
     
-  async handleCreateTask(data,file) {
-    let { 
-      userId,
-      title,
-      taskDescription,
-      amount,
-      expiryDate
-    } = await userUtil.verifyHandleCreateTask.validateAsync(data);
+  async handleGetMainAccount(data) {
+  /*  let { 
+     
+    } = await userUtil.verifyHandleGetMainAccount.validateAsync(data);
+*/
+  const {gamePassKeypair, program, connection}=DB.getBlockChainData()
 
-      let imageURL=''
-      if(file){
+    try {
+      const mainAccount=await this.getGamePassAccounts(program ,gamePassKeypair)
+      return mainAccount
+    } catch (error) {
+      console.log(error)
+    }
     
-        if(serverConfig.NODE_ENV == "production"){
-          imageURL =
-          serverConfig.DOMAIN +
-          file.path.replace("/home", "");
-        }
-        else if(serverConfig.NODE_ENV == "development"){
-    
-          imageURL = serverConfig.DOMAIN+file.path.replace("public", "");
-        }
-    
-       
-      }
-
-      if(imageURL!=''){
-        await this.TaskModel.create({
-          userId:userId,
-          taskDescription:taskDescription,
-          taskImage:imageURL,
-          title,
-          amount:amount,
-          expiryDate
-        });
-      }else{
-        await this.TaskModel.create({
-          userId:userId,
-          taskDescription:taskDescription,
-          title,
-          amount:amount,
-          expiryDate
-        });
-      }
 
   }
 
 
+  async getGamePassAccounts(program ,gamePassKeypair){
+
+    const [gamePassPDA, bump] = await findProgramAddressSync(
+      [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
+      program.programId
+    );
+
+    const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
+
+    return gameAccount;
+
+  }
+/*
   async handleRemoveChild(data) {
     let { 
       userId,
@@ -933,7 +919,7 @@ class UserService {
 
     return password;
   }
-
+*/
 
 }
 

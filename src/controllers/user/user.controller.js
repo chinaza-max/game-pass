@@ -4,8 +4,8 @@ import authService from "../../service/auth.service.js";
 export default class UserController {
 
 
-/*
-  async sendVerificationCodeEmailOrTelAdmin(req, res, next) {
+
+  async getMainAccount(req, res, next) {
 
     try {
 
@@ -15,21 +15,13 @@ export default class UserController {
         ...data,
       }
 
-      const obj = await userService.handleSendVerificationCodeEmailOrTelAdmin(my_bj);
+      const response = await userService.handleGetMainAccount(my_bj);
   
-
-      if(data.type=='email'){
         return res.status(200).json({
           status: 200,
-          message: "verification code sent you email address",
+          message:response,
         });
-      }
-      else{
-        return res.status(200).json({
-          status: 200,
-          message: "verification code sent you number",
-        });
-      }
+      
      
     } catch (error) {
       console.log(error);
@@ -38,7 +30,7 @@ export default class UserController {
     
   }
 
-
+/*
   
   async addOrUpdatefilter(req, res, next) {
 

@@ -3,7 +3,7 @@ import Joi from "joi";
 class UserUtil {
 
   
-  verifyHandleCreateTask=Joi.object({
+  verifyHandleMainAccount=Joi.object({
     userId: Joi.number().required(),
     title: Joi.string().required(),
     taskDescription: Joi.string().required(),

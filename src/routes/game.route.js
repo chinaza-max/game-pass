@@ -15,10 +15,10 @@ class GameRoutes extends GameController {
     this.router.post("/initializeGame", this.initializeGame);
     this.router.post("/getTrasaction", this.getTrasaction);
     this.router.post("/initializeUserGameAccount", this.initializeUserGameAccount);
-    
-    //admin and user and use this route 
-    this.router.get("/getAllGameAccount", this.getAllGameAccount);
+    this.router.post("/userGameAccountActions", this.userGameAccountActions);
 
+    //admin and user and use this route        
+    this.router.get("/getAllGameAccount", this.getAllGameAccount);
     this.router.get("/getAllUserGameAccount", this.getAllUserGameAccount);
 
   } 

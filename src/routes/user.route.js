@@ -12,7 +12,7 @@ class UserRoutes extends UserController {
 
   routes() {
   
-   // this.router.post("/removeChild", this.removeChild);
+   this.router.get("/getMainAccount", this.getMainAccount);
 
   } 
 

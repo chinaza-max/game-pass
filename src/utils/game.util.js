@@ -5,7 +5,7 @@ class GameUtil {
   
   verifyHandleInitializeGame=Joi.object({
     signedTransaction: Joi.string().base64().required(),
-    userPublicKey: Joi.string().required(),
+    gameOwnerPublicKey: Joi.string().required(),
     uniqueId:Joi.number().integer().min(0).required(),
   });
 
@@ -18,7 +18,7 @@ class GameUtil {
       'user',
       'admin',
     ).required(),
-    userPublicKey: Joi.when('type', {
+    gameOwnerPublicKey: Joi.when('type', {
       is: 'user',
       then: Joi.string().required(),
       otherwise: Joi.string().not()
@@ -31,9 +31,29 @@ class GameUtil {
   });
 
 
+
+  verifyHandleUserGameAccountActions=Joi.object({
+    type: Joi. string().valid(
+      'updateUserLevel',
+      'updateUserScore',
+    ).required(),
+    signedTransaction: Joi.string().base64().required()
+  });
+
   verifyHandleGetTrasaction=Joi.object({
     type: Joi.string().required(),
-    userPublicKey: Joi.when('type', {
+    //score: Joi.number().required(),
+    score: Joi.when('type', {
+      is: 'updateUserScore',
+      then: Joi.number().required(),
+      otherwise: Joi.string().not()
+    }),
+    level: Joi.when('type', {
+      is: 'updateUserLevel',
+      then: Joi.number().required(),
+      otherwise: Joi.string().not()
+    }),
+    gameOwnerPublicKey: Joi.when('type', {
       is: 'initializeGame',
       then: Joi.string().required(),
       otherwise: Joi.string().not()
@@ -43,10 +63,10 @@ class GameUtil {
       then: Joi.string().required(),
       otherwise: Joi.string().not()
     }),
-    gamerPublicKey: Joi.when('type', {
-      is: 'initializeUserGameAccount',
+    userGameAcctPublicKey: Joi.alternatives().conditional('type', {
+      is: Joi.string().valid('initializeUserGameAccount', 'updateUserScore', 'updateUserLevel'),
       then: Joi.string().required(),
-      otherwise: Joi.string().not()
+      otherwise: Joi.string().forbidden()
     }),
     gameId: Joi.when('type', {
       is: 'initializeUserGameAccount',

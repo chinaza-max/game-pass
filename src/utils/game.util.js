@@ -13,6 +13,24 @@ class GameUtil {
     signedTransaction: Joi.string().base64().required()
   });
 
+  verifyHandleGetAllGameAccount=Joi.object({
+    type: Joi. string().valid(
+      'user',
+      'admin',
+    ).required(),
+    userPublicKey: Joi.when('type', {
+      is: 'user',
+      then: Joi.string().required(),
+      otherwise: Joi.string().not()
+    })
+  });
+
+  
+  verifyHandleGetAllUserGameAccount=Joi.object({
+    gameId:Joi.string().required()
+  });
+
+
   verifyHandleGetTrasaction=Joi.object({
     type: Joi.string().required(),
     userPublicKey: Joi.when('type', {
@@ -30,9 +48,9 @@ class GameUtil {
       then: Joi.string().required(),
       otherwise: Joi.string().not()
     }),
-    uniqueId: Joi.when('type', {
+    gameId: Joi.when('type', {
       is: 'initializeUserGameAccount',
-      then: Joi.number().integer().min(0).required(),
+      then:  Joi.string().required(),
       otherwise: Joi.string().not()
     })
   });

@@ -38,7 +38,7 @@ export default class GameController {
     res,
     next
   ){
-    const data=req.body
+    const data=req.query
  
     try {
         const my_bj = {
@@ -128,7 +128,7 @@ export default class GameController {
     res,
     next
   ){
-    const data=body.query
+    const data=req.query
  
     try {
         const my_bj = {
@@ -178,7 +178,6 @@ export default class GameController {
   }
  
 
-
   async getTrasaction(
     req,
     res,
@@ -193,7 +192,6 @@ export default class GameController {
         }
                           
       const response=await gameService.handleGetTrasaction(my_bj);
-        console.log(response)
 
       return res.status(200).json({
         status: 200,

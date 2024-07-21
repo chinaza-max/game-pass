@@ -40,7 +40,7 @@ class UserService {
     } = await gameUtil.verifyHandleGetTrasaction.validateAsync(data);
   
     const {gamePassKeypair, program, connection}=DB.getBlockChainData()
-    
+         
 
     if(gameOwnerPublicKey){
       try {
@@ -58,13 +58,13 @@ class UserService {
       }  
     }
 
-    if(userGameAcctPublicKey){
+   /* if(userGameAcctPublicKey){
       try {
         new PublicKey(userGameAcctPublicKey)
       } catch (error) {
         throw new BadRequestError("this is an invalid gamer public key")
       }
-    }
+    }*/
 
     if(userGameAcctPublicKey){
       try {
@@ -73,6 +73,16 @@ class UserService {
         throw new BadRequestError("this is an invalid User Game Account public key")
       }
     }
+
+    if(userGameAcctPublicKey&&(type=="updateUserLevel"||type=="updateUserScore")){
+      try {
+       await program.account.userGameAccount.fetch(userGameAcctPublicKey);
+      } catch (error) {
+        throw new NotFoundError(error)
+      }
+    }
+
+  
 
     
 
@@ -250,7 +260,7 @@ class UserService {
      
 
     } catch (error) {
-      console.error('Error initialize User Game Account:', error);
+      console.error(error);
     }
 
   }
@@ -305,7 +315,7 @@ class UserService {
       if (logs.some(log => log.includes("Error Code: UserAlreadyRegistered"))) {
           throw new BadRequestError("User is already registered. Please try with a different account.");
       } else {
-          throw new BadRequestError("Transaction failed with error:", err.message)
+          throw new BadRequestError("Transaction failed with error:", error)
         }
     }
 
@@ -333,6 +343,92 @@ class UserService {
 
   }
 
+
+  
+  async handleGetSingleGameAccount(data) {
+    let { 
+      gameId
+    } = await gameUtil.verifyHandleGetSingleGameAccount.validateAsync(data);
+
+    try {  
+        
+    const {gamePassKeypair, program, connection}=DB.getBlockChainData()
+
+    if(gameId){
+      try {
+        new PublicKey(gameId)
+      } catch (error) {
+        throw new BadRequestError("this is an invalid gameId")
+      }
+    }
+
+    const result= await this.doesGameIdExist(gameId, program ,gamePassKeypair)
+    if(result){
+
+      const getGameAccountInfor=await this.getGameAccountInfor(gameId,program)
+     
+      return getGameAccountInfor
+
+    }else{
+      throw new NotFoundError("gameId is not found ")
+    }
+ 
+
+    } catch (error) {
+      console.error('Error fetching  game account:', error);
+    }
+  }
+
+  async handleGetSingleUserGameAccount(data) {
+    let { 
+      gameId,
+      userGameAcctPublicKey
+    } = await gameUtil.verifyHandleGetSingleUserGameAccount.validateAsync(data);
+
+    let singleUserGameAccount=''
+
+    try {  
+        
+    const {gamePassKeypair, program, connection}=DB.getBlockChainData()
+
+    if(gameId){
+      try {
+        new PublicKey(gameId)
+      } catch (error) {
+        throw new BadRequestError("this is an invalid gameId")
+      }
+    }
+
+    const result= await this.doesGameIdExist(gameId, program ,gamePassKeypair)
+    if(result){
+
+      const gamePassAccount=await this.getGamePassAccounts(program ,gamePassKeypair)
+
+      for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
+        const accountPDA = gamePassAccount.userGameAccount[index].accountId;
+        const userGameAccount= await this.getUserGameAccountInfor(accountPDA, program)
+        if(userGameAccount.gameId==gameId&&userGameAccount.owner == userGameAcctPublicKey){
+          singleUserGameAccount={...userGameAccount,"level":Number(userGameAccount.level.toString()),
+            "score":Number(userGameAccount.score.toString())}
+
+            break
+        }
+      }
+
+    }else{
+      throw new NotFoundError("gameId is not found ")
+    }
+    if(singleUserGameAccount==''){
+      throw new NotFoundError("No user account found")
+    }
+    return singleUserGameAccount
+
+    } catch (error) {
+      console.error(error);
+      throw new NotFoundError(error)
+
+    }
+  }
 
   async handleGetAllUserGameAccount(data) {
     let { 

@@ -30,6 +30,15 @@ class GameUtil {
     gameId:Joi.string().required()
   });
 
+  verifyHandleGetSingleUserGameAccount=Joi.object({
+    gameId:Joi.string().required(),
+    userGameAcctPublicKey:  Joi.string().required()
+  });
+
+
+  verifyHandleGetSingleGameAccount=Joi.object({
+    gameId:Joi.string().required()
+  });
 
 
   verifyHandleUserGameAccountActions=Joi.object({

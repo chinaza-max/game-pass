@@ -32,6 +32,60 @@ export default class GameController {
   }
 
   
+  async getSingleGameAccount(
+    req,
+    res,
+    next
+  ){
+    const data=req.query
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        const response= await gameService.handleGetSingleGameAccount(my_bj);
+
+      return res.status(200).json({
+        status: 200,
+        message: "success.",
+        data: response
+      });
+
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
+
+  async getSingleUserGameAccount(
+    req,
+    res,
+    next
+  ){
+    const data=req.query
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        const response= await gameService.handleGetSingleUserGameAccount(my_bj);
+
+      return res.status(200).json({
+        status: 200,
+        message: "success.",
+        data: response
+      });
+
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
+  
   async getAllUserGameAccount(
     req,
     res,
@@ -233,6 +287,7 @@ export default class GameController {
         status: 200,
         data: response,
       });
+      
     } catch (error) {
       console.log(error)
       next(error);

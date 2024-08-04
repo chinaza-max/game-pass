@@ -57,6 +57,7 @@ class GameUtil {
       then: Joi.number().required(),
       otherwise: Joi.string().not()
     }),
+    
     level: Joi.when('type', {
       is: 'updateUserLevel',
       then: Joi.number().required(),
@@ -64,6 +65,18 @@ class GameUtil {
     }),
     gameOwnerPublicKey: Joi.when('type', {
       is: 'initializeGame',
+      then: Joi.string().required(),
+      otherwise: Joi.string().not()
+    }),
+    
+    gameAvatar: Joi.when('type', {
+      is: 'initializeGame',
+      then: Joi.string().required(),
+      otherwise: Joi.string().not()
+    }),
+
+    userAvatar: Joi.when('type', {
+      is: 'initializeUserGameAccount',
       then: Joi.string().required(),
       otherwise: Joi.string().not()
     }),

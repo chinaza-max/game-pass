@@ -12,18 +12,20 @@ import {  PublicKey, SystemProgram } from '@solana/web3.js';
 import * as anchor from '@project-serum/anchor';
 import {Wallet} from '@project-serum/anchor';
 import BN from 'bn.js';
+import {   
+  GamePassSDK
+  } from "game-pass-sdk"
 
 
-
-import {
+import { 
   NotFoundError,
   ConflictError,
   BadRequestError,
   SystemError
 } from "../errors/index.js";
 
-class UserService {
-
+class UserService { 
+ 
     
 
   async handleInitializeMainAccount(data) {
@@ -33,15 +35,23 @@ class UserService {
     */
 
     try {
-     
+      
+      const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
+      const secretKey = Uint8Array.from(secret)
+      const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
+      
+      const GamePassSDKInstance=new GamePassSDK(new Wallet(Keypair))
 
-  
+      GamePassSDKInstance.intializeGamePass()
+
+            
+  /*
       const {gamePassKeypair, program, connection}=DB.getBlockChainData()
 
       const [gamePassPDA, bump] = await findProgramAddressSync(
         [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
         program.programId
-      );
+      );*/
       
 /*
       console.log(gamePassKeypair.publicKey.toString())
@@ -60,14 +70,14 @@ class UserService {
       //const gamePassAccount = await connection.getAccountInfo(new PublicKey("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z"));
       
       //const gamePassAccount = await program.account.userGameAccount.fetch("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z");
-      const gamePassAccount = await program.account  //.gameAccts.fetch("5XpUCd6TWzWLyPVGkU8VkdW3hM7m13akUdSNCZEHNmrc");
+     // const gamePassAccount = await program.account  //.gameAccts.fetch("5XpUCd6TWzWLyPVGkU8VkdW3hM7m13akUdSNCZEHNmrc");
       //const gameAccount = await program.account.gamePass.fetch(gamePassPDA);
       //const gamePassAccount = await program.account.userGameAcct.fetch("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z");
       //const gamePassAccount = await connection.getAccountInfo(new PublicKey("7na7Yed7Xhs7FZpbziHHWPogwQBHxv4hUCgsh1KTew1Z"));
   
-      console.log(gamePassAccount)
+      //console.log(gamePassAccount)
    
-      return
+      /*
 
       const tx = await program.methods.initializeMainAccount()
         .accounts({
@@ -79,6 +89,8 @@ class UserService {
       ).signers([gamePassKeypair])
       .rpc(); 
       console.log(tx)
+
+      */
 
     } catch (error) {
       console.log(error)

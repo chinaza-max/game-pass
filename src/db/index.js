@@ -108,7 +108,7 @@ this.sequelize.query(disableForeignKeyChecks)
     const program = new anchor.Program(idl, programId, provider);
      
     DB.program=program
-    DB.userKeypair=Keypair
+    DB.userKeypair=Keypair  
     DB.connection=connection
 
   }

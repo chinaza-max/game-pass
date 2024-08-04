@@ -6,6 +6,7 @@ import gameUtil from "../utils/game.util.js";
 import bcrypt from'bcrypt';
 import serverConfig from "../config/server.js";
 import {  Op, Sequelize } from "sequelize";
+import { Wallet  } from '@project-serum/anchor';
 import mailService from "./mail.service.js";
 import crypto from 'crypto';
 import DB from '../db/index.js';
@@ -13,7 +14,12 @@ import {  SystemProgram ,Transaction,PublicKey, sendAndConfirmRawTransaction} fr
 import { findProgramAddressSync } from '@project-serum/anchor/dist/cjs/utils/pubkey.js'
 import * as anchor from '@project-serum/anchor';
 import BN from 'bn.js';
+import {   
+  GamePassSDK
+  } from "game-pass-sdk"
 
+
+  
 import {
   NotFoundError,
   ConflictError,
@@ -36,6 +42,8 @@ class UserService {
       userGameAcctPublicKey,
       score,
       level,
+      gameAvatar,
+      userAvatar,
       type
     } = await gameUtil.verifyHandleGetTrasaction.validateAsync(data);
   
@@ -52,10 +60,10 @@ class UserService {
    
 
     if(gameName){
-      const result =await this.checkIfthisUserHastheGameName(gameOwnerPublicKey, gameName, program)
+      /*const result =await this.checkIfthisUserHastheGameName(gameOwnerPublicKey, gameName, program)
       if(result==true){       
         throw new ConflictError("Game with this name already exist")
-      }  
+      }  */
     }
 
    /* if(userGameAcctPublicKey){
@@ -93,6 +101,32 @@ class UserService {
 
       if(type=="initializeGame"){
                 
+        const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
+        const secretKey = Uint8Array.from(secret)
+        const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
+        
+        const GamePassSDKInstance=new GamePassSDK(new Wallet(Keypair))
+       // GamePassSDKInstance.intializeGamePass()
+           
+       
+          try {
+            //console.log(await GamePassSDKInstance.getAllGameAccountsForUser(Keypair.publicKey))
+            return await GamePassSDKInstance.getAllGameAccountsForUser(Keypair.publicKey)
+          } catch (error) {
+              console.log("error")
+              console.log("error")
+              console.log("error")
+              console.log(error)  
+              console.log("error")
+              console.log("error")
+              console.log("error")
+              console.log("error")
+
+
+          }
+
+        //console.log(await GamePassSDKInstance.getGamePassAccounts())
+        /* 
         const uniqueId2 = Math.floor(Date.now() / 1000); 
         const uniqueIdBuffer = Buffer.alloc(8);
         uniqueIdBuffer.writeUInt32LE(uniqueId2, 0)
@@ -144,15 +178,37 @@ class UserService {
           const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
 
           return { transaction: serializedTransaction , uniqueId: uniqueId2};
+          */
+
       }
       else if(type=="initializeUserGameAccount"){
+
+
+        try {
+          const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
+          const secretKey = Uint8Array.from(secret)
+          const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
+          
+          const GamePassSDKInstance=new GamePassSDK(new Wallet(Keypair))
+
+          console.log(Keypair.publicKey.toString())
+          return await GamePassSDKInstance.getSerializedInitializeUserGameAccountTransaction(gameId, userAvatar, Keypair.publicKey)
+        } catch (error) {
+          console.log(error)
+        }
+
+
+
+return
+
+
+
 
         const result=await this.doesGameIdExist(gameId, program ,gamePassKeypair)
         const result2=await this.getGameAccountInfor(gameId, program)
         const uniqueId=result2.uniqueId.toString()
         const GameOwnerPublicKey=new PublicKey(result2.owner).toString()
 
-    
         if(!result){
           throw new NotFoundError("gameId does not exist")
         }
@@ -288,7 +344,7 @@ class UserService {
       if (logs.some(log => log.includes("Error Code: UserAlreadyRegistered"))) {
           throw new BadRequestError("User is already registered. Please try with a different account.");
       } else {
-          throw new BadRequestError("Transaction failed with error:", err.message)
+          throw new BadRequestError("Transaction failed with error:", error.message)
         }
     }
 

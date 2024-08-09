@@ -79,6 +79,21 @@ export type UserGameAccount = {
   customData: string;
 };
 
+export type UserGameAccount2 = {
+  image: string;
+  gameId: string;
+  accountId: string;
+  level: number;
+  score: number;
+  status: string;
+  assets: Assets[];
+  createdAt: BN;
+  updateAt: BN;
+  owner: PublicKey;
+  badges: PublicKey[];
+  customData: string;
+};
+
 export type GamePass = {
   bump: number;
   totalUsers: BN;
@@ -110,6 +125,70 @@ export type GameAccts2 = {
   updatedAt: BN;
   owner: PublicKey;
 };
+
+export type BadgeCreationResult= {
+  transactionSignature: string;
+}
+
+export type UpdateBadgeProgressResult= {
+  transactionSignature: string;
+}
+
+
+
+
+export type Tier ={
+  tierName: string;
+  tierImageUri: string;
+  requiredProgress: number; 
+}
+
+
+export type createTieredBadgeResult= {
+  transactionSignature: string;
+}
+
+export type UpdateLeaderboardResult= {
+  transactionSignature: string;
+}
+
+export type AssignBadgeResult= {
+  transactionSignature: string;
+}
+
+export type InitializeGameResult= {
+  transactionSignature: string;
+}
+
+
+
+export type IntializeGamePassResult= {
+  transactionSignature: string;
+}
+
+
+export type UpdateUserLevelResult= {
+  transactionSignature: string;
+}
+
+
+export type UpdateUserScoreResult= {
+  transactionSignature: string;
+}
+
+export type GetSerializedInitializeGameTransactionResult= {
+  serializedTransaction: string;
+  uniqueId: Number;
+}
+
+export type GetSerializedInitializeUserGameAccountTransactionResult= {
+  serializedTransaction: string;
+}
+
+
+export type GetSerializedUpdateUserAvatarTransactionResult= {
+  serializedTransaction: string;
+}
 
 export type Leaderboard = {
   gameId: PublicKey;

@@ -29,6 +29,13 @@ import {
 } from "../errors/index.js";
 import { Console } from "console";
 
+
+const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
+const secretKey = Uint8Array.from(secret)
+const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
+
+const GamePassSDKInstance=new GamePassSDK(Keypair)
+
 class UserService {
   EmailandTelValidationModel=EmailandTelValidation 
   GamesModel=Games
@@ -40,6 +47,7 @@ class UserService {
       gameName,
       gameId,
       userGameAcctPublicKey,
+      gamerPublicKey,
       score,
       level,
       gameAvatar,
@@ -47,7 +55,6 @@ class UserService {
       type
     } = await gameUtil.verifyHandleGetTrasaction.validateAsync(data);
   
-    const {gamePassKeypair, program, connection}=DB.getBlockChainData()
          
 
     if(gameOwnerPublicKey){
@@ -59,20 +66,13 @@ class UserService {
     }      
    
 
-    if(gameName){
-      /*const result =await this.checkIfthisUserHastheGameName(gameOwnerPublicKey, gameName, program)
-      if(result==true){       
-        throw new ConflictError("Game with this name already exist")
-      }  */
-    }
-
-   /* if(userGameAcctPublicKey){
+    if(userGameAcctPublicKey){
       try {
         new PublicKey(userGameAcctPublicKey)
       } catch (error) {
         throw new BadRequestError("this is an invalid gamer public key")
       }
-    }*/
+    }
 
     if(userGameAcctPublicKey){
       try {
@@ -82,235 +82,59 @@ class UserService {
       }
     }
 
-    if(userGameAcctPublicKey&&(type=="updateUserLevel"||type=="updateUserScore")){
-      try {
-       await program.account.userGameAccount.fetch(userGameAcctPublicKey);
-      } catch (error) {
-        throw new NotFoundError(error)
-      }
-    }
-
-  
-
-    
-
     try {
 
 
       const createdAt = Date.now();
 
       if(type=="initializeGame"){
-                
-        const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
-        const secretKey = Uint8Array.from(secret)
-        const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
-        
-        const GamePassSDKInstance=new GamePassSDK(new Wallet(Keypair))
-       // GamePassSDKInstance.intializeGamePass()
-           
-       
-          try {
-            //console.log(await GamePassSDKInstance.getAllGameAccountsForUser(Keypair.publicKey))
-            return await GamePassSDKInstance.getAllGameAccountsForUser(Keypair.publicKey)
-          } catch (error) {
-              console.log("error")
-              console.log("error")
-              console.log("error")
-              console.log(error)  
-              console.log("error")
-              console.log("error")
-              console.log("error")
-              console.log("error")
-
-
-          }
-
-        //console.log(await GamePassSDKInstance.getGamePassAccounts())
-        /* 
-        const uniqueId2 = Math.floor(Date.now() / 1000); 
-        const uniqueIdBuffer = Buffer.alloc(8);
-        uniqueIdBuffer.writeUInt32LE(uniqueId2, 0)
-
-        const result = await this.GamesModel.findOne({
-          where: {
-            [Op.and]: [
-              { GameOwnerPublicKey:gameOwnerPublicKey },
-              { uniqueId: uniqueId2 }
-            ]
-          }
-        });
-
-        if (result) new ConflictError("Game with the id exist contact support")
-    
-          const [gameAcctPDA] = await findProgramAddressSync(
-            [Buffer.from('game_acct'), new PublicKey(gameOwnerPublicKey).toBuffer(),uniqueIdBuffer],
-            program.programId
-          );
-
-          const [gamePassPDA] = await findProgramAddressSync(
-            [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
-            program.programId
-          );
-
-          const transaction = new Transaction();
-
-          const instruction = program.instruction.initializeGame(
-            new BN(uniqueId2),
-            gameName,
-            new BN(createdAt), 
-            {
-                accounts: {
-                    gameAcct: gameAcctPDA,
-                    gamePass: gamePassPDA, 
-                    user: gameOwnerPublicKey,
-                    systemProgram: SystemProgram.programId,
-                    rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-              },
-            }
-          );
-
-          const tx=transaction.add(instruction)
-          tx.feePayer = new PublicKey(gameOwnerPublicKey);  
-
-          const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
-          tx.recentBlockhash = blockHash;
-
-          const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
-
-          return { transaction: serializedTransaction , uniqueId: uniqueId2};
-          */
+                           
+        try {
+          return await GamePassSDKInstance.initializeGame(gameName, gameAvatar)
+        } catch (error) {
+          console.log(error)  
+        }
 
       }
       else if(type=="initializeUserGameAccount"){
 
 
-        try {
-          const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
-          const secretKey = Uint8Array.from(secret)
-          const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
+        try {        
           
-          const GamePassSDKInstance=new GamePassSDK(new Wallet(Keypair))
+          //return await GamePassSDKInstance.getSerializedUpdateUserAvatarTransaction(new PublicKey(userGameAcctPublicKey) , new PublicKey(gamerPublicKey), userAvatar) 
 
-          console.log(Keypair.publicKey.toString())
-          return await GamePassSDKInstance.getSerializedInitializeUserGameAccountTransaction(gameId, userAvatar, Keypair.publicKey)
+          //return await GamePassSDKInstance.getSerializedInitializeUserGameAccountTransaction(new PublicKey(gameId) ,userAvatar , new PublicKey(userGameAcctPublicKey)) 
+
+          return await GamePassSDKInstance.getGamePassAccounts() 
+
         } catch (error) {
           console.log(error)
-        }
+        }     
 
-
-
-return
-
-
-
-
-        const result=await this.doesGameIdExist(gameId, program ,gamePassKeypair)
-        const result2=await this.getGameAccountInfor(gameId, program)
-        const uniqueId=result2.uniqueId.toString()
-        const GameOwnerPublicKey=new PublicKey(result2.owner).toString()
-
-        if(!result){
-          throw new NotFoundError("gameId does not exist")
-        }
-
-        const uniqueIdBuffer = Buffer.alloc(8);
-        uniqueIdBuffer.writeUInt32LE(uniqueId, 0)
-
-
-      const [gameAcctPDA] = await findProgramAddressSync(
-        [Buffer.from('game_acct'), new PublicKey(GameOwnerPublicKey).toBuffer(), uniqueIdBuffer],
-        program.programId
-      );
-      
-      const [userGameAcctPDA] = await findProgramAddressSync(
-        [Buffer.from('user_game_acct'), new PublicKey(gameAcctPDA).toBuffer(),
-        new PublicKey(userGameAcctPublicKey).toBuffer()],
-        program.programId
-      );
-      
-      const [gamePassPDA] = await findProgramAddressSync(
-        [Buffer.from('game_pass'), gamePassKeypair.publicKey.toBuffer()],
-        program.programId
-      );
-
-      const transaction = new Transaction();
-         
-      const instruction = program.instruction.initializeUserGameAccount(
-        new PublicKey(gameAcctPDA).toString(),
-        new BN(createdAt),
-        {
-            accounts: {
-                userGameAcct: userGameAcctPDA,
-                gamePass: gamePassPDA,
-                gameAcct: gameAcctPDA,
-                user: userGameAcctPublicKey,
-                systemProgram: SystemProgram.programId,
-                rent: anchor.web3.SYSVAR_RENT_PUBKEY
-          },
-        }
-      );
-
-      const tx=transaction.add(instruction)
-      tx.feePayer = new PublicKey(userGameAcctPublicKey);  
-
-      const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
-      tx.recentBlockhash = blockHash;
-    
-      const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
-      return { transaction: serializedTransaction };
+     
       }
       else if(type=="updateUserScore"){
 
-       const UserGameAccountInfor=await this.getUserGameAccountInfor(userGameAcctPublicKey, program)
-       const GameAccountInfor=await this.getGameAccountInfor(UserGameAccountInfor.gameId, program)
-       const transaction = new Transaction();
-         
-        const instruction = program.instruction.updateUserScore(
-          new BN(score),
-          {
-              accounts: {
-                userGameAcct: userGameAcctPublicKey,
-                gameAcct: UserGameAccountInfor.gameId,
-                signer: new PublicKey(GameAccountInfor.owner).toString()
-            },
-        })   
+        
+        try {        
+            
+          return await GamePassSDKInstance.updateUserScore(2, userGameAcctPublicKey)
 
-        const tx=transaction.add(instruction)
-        tx.feePayer = new PublicKey(GameAccountInfor.owner);  
-  
-        const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
-        tx.recentBlockhash = blockHash;
-      
-        const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
-        return { transaction: serializedTransaction };
-
+        } catch (error) {
+          console.log(error)
+        }   
+       
 
       }
       else if(type=="updateUserLevel"){
 
-        const UserGameAccountInfor=await this.getUserGameAccountInfor(userGameAcctPublicKey, program)
-        const GameAccountInfor=await this.getGameAccountInfor(UserGameAccountInfor.gameId, program)
-        const transaction = new Transaction();
-          
-         const instruction = program.instruction.updateUserLevel(
-           new BN(level),
-           {
-               accounts: {
-                 userGameAcct: userGameAcctPublicKey,
-                 gameAcct: UserGameAccountInfor.gameId,
-                 signer: new PublicKey(GameAccountInfor.owner).toString()
-             },
-         })   
- 
-         const tx=transaction.add(instruction)
-         tx.feePayer = new PublicKey(GameAccountInfor.owner);  
-   
-         const blockHash = (await connection.getLatestBlockhash('finalized')).blockhash;
-         tx.recentBlockhash = blockHash;
-       
-         const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true}).toString('base64');
-         return { transaction: serializedTransaction };
- 
+        try {        
+            
+          return await GamePassSDKInstance.updateUserLevel(2, userGameAcctPublicKey)
+
+        } catch (error) {
+          console.log(error)
+        }   
  
       }
      
@@ -491,11 +315,10 @@ return
       gameId
     } = await gameUtil.verifyHandleGetAllUserGameAccount.validateAsync(data);
 
-    const userGameAccounts=[]
 
     try {  
       
-    const {gamePassKeypair, program, connection}=DB.getBlockChainData()
+   // const {gamePassKeypair, program, connection}=DB.getBlockChainData()
 
     if(gameId){
       try {
@@ -505,25 +328,7 @@ return
       }
     }
 
-    const result= await this.doesGameIdExist(gameId, program ,gamePassKeypair)
-    if(result){
-
-      const gamePassAccount=await this.getGamePassAccounts(program ,gamePassKeypair)
-
-      for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
-        const accountPDA = gamePassAccount.userGameAccount[index].accountId;
-        const userGameAccount= await this.getUserGameAccountInfor(accountPDA, program)
-        if(userGameAccount.gameId==gameId){
-          userGameAccounts.push({...userGameAccount,"level":Number(userGameAccount.level.toString()),
-            "score":Number(userGameAccount.score.toString())})
-        }
-      }
-
-    }else{
-      throw new NotFoundError("gameId is not found ")
-    }
-
-    return userGameAccounts
+    const result= await GamePassSDK.getAllUserGameAccount()
 
     } catch (error) {
       console.error('Error initializing game:', error);
@@ -557,7 +362,6 @@ return
       gameOwnerPublicKey
     } = await gameUtil.verifyHandleGetAllGameAccount.validateAsync(data);
 
-    const {gamePassKeypair, program, connection}=DB.getBlockChainData()
     if(gameOwnerPublicKey){
       try {
         new PublicKey(gameOwnerPublicKey)
@@ -569,46 +373,14 @@ return
 
     try {   
 
-      const gameAccount=[]
       if(type=="admin"){
-        const accountPassAccount= await this.getGamePassAccounts(program,gamePassKeypair)
-            
-        if(accountPassAccount){
-            console.log(accountPassAccount)
-            for (let index = 0; index < accountPassAccount.games.length; index++) {
-              const element = accountPassAccount.games[index];
-              
 
-              const accountGameAccountInfo= await this.getGameAccountInfor(element.gameId,program)
-              
-              gameAccount.push(accountGameAccountInfo)
-              
-            }
-        }
+        return await GamePassSDKInstance.getAllGameAccounts()
       }
       else{
-            const accountPassAccount= await this.getGamePassAccounts(program,gamePassKeypair)
-            
-            if(accountPassAccount){
-                console.log(accountPassAccount)
-                for (let index = 0; index < accountPassAccount.games.length; index++) {
-                  const element = accountPassAccount.games[index];
-                  
-  
-                  const accountGameAccountInfo= await this.getGameAccountInfor(element.gameId,program)
-                  
-                  if(new PublicKey(accountGameAccountInfo.owner).toString()==gameOwnerPublicKey){
-                    gameAccount.push(accountGameAccountInfo)
-                  }
-  
-                }
-            }
+
+        return await GamePassSDKInstance.getAllGameAccountsForUser(gameOwnerPublicKey)
       }
-
-
-
-
-      return gameAccount
     } catch (error) {
       console.error('Error initializing game:', error);
     }

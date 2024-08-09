@@ -1,6 +1,7 @@
 import * as anchor from '@project-serum/anchor';
 import { Connection, clusterApiUrl } from '@solana/web3.js';
-export const getProvider = (wallet) => {
+import { Wallet } from '@project-serum/anchor';
+export const getProvider = (Keypair) => {
     // Create a new connection to the Solana devnet
     const connection = new Connection(clusterApiUrl('devnet'));
     // Ensure PRIVATE_KEY_BLOCK_CHAIN_PUBLIC is defined
@@ -9,7 +10,7 @@ export const getProvider = (wallet) => {
     // Create Keypair from secret key
     //const keypair = anchor.web3.Keypair.fromSecretKey(secretKey);
     // Create an Anchor provider
-    const provider = new anchor.AnchorProvider(connection, wallet, {
+    const provider = new anchor.AnchorProvider(connection, new Wallet(Keypair), {
         commitment: 'confirmed',
     });
     return provider;

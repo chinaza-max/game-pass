@@ -94,6 +94,11 @@ class GameUtil {
       is: 'initializeUserGameAccount',
       then:  Joi.string().required(),
       otherwise: Joi.string().not()
+    }),
+    gamerPublicKey: Joi.when('type', {
+      is: 'initializeUserGameAccount',
+      then:  Joi.string().required(),
+      otherwise: Joi.string().not()
     })
   });
 }

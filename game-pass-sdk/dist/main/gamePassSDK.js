@@ -16,32 +16,36 @@ import IDL from "../utils/idl.json" assert { type: 'json' };
 import BN from 'bn.js';
 const programId = new PublicKey(myProgramId);
 export class GamePassSDK {
-    constructor(wallet) {
-        this.provider = getProvider(wallet);
+    constructor(keypair) {
+        this.provider = getProvider(keypair);
+        this.GameOwnerkeypair = keypair;
         this.gamePassAccount = new PublicKey('HxXJeZzHM8hyimqqzoho7bpYoXzPd6sPoqBSfsFUQ93e');
         this.program = new anchor.Program(IDL, programId, this.provider);
     }
-    initializeGame(GameOwnerkeypair, gameName, gameAvatar) {
+    initializeGame(gameName, gameAvatar) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield this.checkIfthisUserHastheGameName(GameOwnerkeypair.publicKey, gameName);
+                const result = yield this.checkIfthisUserHastheGameName(this.GameOwnerkeypair.publicKey, gameName);
                 if (result == false) {
                     const createdAt = Date.now();
                     const uniqueId = Math.floor(Date.now() / 1000);
                     const uniqueIdBuffer = Buffer.alloc(8);
                     uniqueIdBuffer.writeUInt32LE(uniqueId, 0);
-                    const [gameAcctPDA, gameAcctBump] = findProgramAddressSync([Buffer.from('game_acct'), GameOwnerkeypair.publicKey.toBuffer(), uniqueIdBuffer], this.program.programId);
+                    const [gameAcctPDA, gameAcctBump] = findProgramAddressSync([Buffer.from('game_acct'), this.GameOwnerkeypair.publicKey.toBuffer(), uniqueIdBuffer], this.program.programId);
                     const tx = yield this.program.methods.initializeGame(new BN(uniqueId), gameName, gameAvatar, new BN(createdAt))
                         .accounts({
                         gameAcct: gameAcctPDA,
                         gamePass: this.gamePassAccount,
-                        user: GameOwnerkeypair.publicKey,
+                        user: this.GameOwnerkeypair.publicKey,
                         systemProgram: SystemProgram.programId,
                         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
                     })
-                        .signers([GameOwnerkeypair])
+                        .signers([this.GameOwnerkeypair])
                         .rpc();
-                    console.log('Transaction successful:', tx);
+                    return {
+                        transactionSignature: tx
+                    };
+                    //console.log('Transaction successful:', tx);
                 }
                 else {
                     throw new Error('Failed to initialize game, game name already exist');
@@ -85,7 +89,7 @@ export class GamePassSDK {
                     const blockHash = (yield this.program.provider.connection.getLatestBlockhash('finalized')).blockhash;
                     transaction.recentBlockhash = blockHash;
                     const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true }).toString('base64');
-                    return { transaction: serializedTransaction, uniqueId: uniqueId2 };
+                    return { serializedTransaction: serializedTransaction, uniqueId: uniqueId2 };
                 }
                 else {
                     throw new Error('Failed to initialize game, game name already exist');
@@ -118,6 +122,9 @@ export class GamePassSDK {
                     rent: anchor.web3.SYSVAR_RENT_PUBKEY
                 }).signers([Keypair])
                     .rpc();
+                return {
+                    transactionSignature: tx
+                };
                 console.log('Transaction successful:', tx);
             }
             catch (error) {
@@ -133,12 +140,12 @@ export class GamePassSDK {
             }
         });
     }
-    getSerializedInitializeUserGameAccountTransaction(gameId, userAvatar, userGameAcctPublicKey) {
+    getSerializedInitializeUserGameAccountTransaction(gameId, userAvatar, gamerPublicKey) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const createdAt = Date.now();
                 const program = this.program;
-                const result = yield this.doesGameIdExist(gameId);
+                const result = yield this.doesGameIdExist(gameId.toString());
                 const result2 = yield this.getGameAccountInfor(new PublicKey(gameId));
                 const uniqueId = result2.uniqueId.toString();
                 const GameOwnerPublicKey = new PublicKey(result2.owner);
@@ -147,25 +154,24 @@ export class GamePassSDK {
                 }
                 const uniqueIdBuffer = Buffer.alloc(8);
                 uniqueIdBuffer.writeUInt32LE(Number(uniqueId), 0);
-                console.log(GameOwnerPublicKey);
                 const [gameAcctPDA] = yield findProgramAddressSync([Buffer.from('game_acct'), GameOwnerPublicKey.toBuffer(), uniqueIdBuffer], program.programId);
-                const [userGameAcctPDA] = yield findProgramAddressSync([Buffer.from('user_game_acct'), gameAcctPDA.toBuffer(), new PublicKey(userGameAcctPublicKey).toBuffer()], program.programId);
+                const [userGameAcctPDA] = yield findProgramAddressSync([Buffer.from('user_game_acct'), gameAcctPDA.toBuffer(), new PublicKey(gamerPublicKey).toBuffer()], program.programId);
                 const transaction = new Transaction();
-                const instruction = yield program.methods.initializeUserGameAccount(gameId, userAvatar, new BN(createdAt))
+                const instruction = yield program.methods.initializeUserGameAccount(gameId.toString(), userAvatar, new BN(createdAt))
                     .accounts({
                     userGameAcct: userGameAcctPDA,
                     gamePass: this.gamePassAccount,
-                    gameAcct: gameAcctPDA,
-                    user: new PublicKey(userGameAcctPublicKey),
+                    gameAcct: gameId,
+                    user: gamerPublicKey,
                     systemProgram: SystemProgram.programId,
                     rent: anchor.web3.SYSVAR_RENT_PUBKEY,
                 }).instruction();
                 transaction.add(instruction);
-                transaction.feePayer = new PublicKey(userGameAcctPublicKey);
+                transaction.feePayer = new PublicKey(gamerPublicKey);
                 const blockHash = (yield this.provider.connection.getLatestBlockhash('finalized')).blockhash;
                 transaction.recentBlockhash = blockHash;
                 const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true }).toString('base64');
-                return { transaction: serializedTransaction };
+                return { serializedTransaction: serializedTransaction };
             }
             catch (error) {
                 if (error instanceof Error) {
@@ -185,15 +191,15 @@ export class GamePassSDK {
             return gameAccount;
         });
     }
-    getGameAccountInfor(pubkeyKey) {
+    getGameAccountInfor(PublicKey) {
         return __awaiter(this, void 0, void 0, function* () {
-            const gameAccountInfor = yield this.program.account.gameAccts.fetch(pubkeyKey);
+            const gameAccountInfor = yield this.program.account.gameAccts.fetch(PublicKey);
             return gameAccountInfor;
         });
     }
-    getUserGameAccountInfor(pubkeyKey, program) {
+    getUserGameAccountInfor(PublicKey) {
         return __awaiter(this, void 0, void 0, function* () {
-            const gameAccountInfor = yield program.account.userGameAccount.fetch(pubkeyKey);
+            const gameAccountInfor = yield this.program.account.userGameAccount.fetch(PublicKey.toString());
             return gameAccountInfor;
         });
     }
@@ -208,34 +214,68 @@ export class GamePassSDK {
             return false;
         });
     }
-    updateUserLevel(level, GameOwnerkeypair, userGameAcctPublicKey) {
+    doesUserGameAccoutExist(userGameAcctPublicKey) {
         return __awaiter(this, void 0, void 0, function* () {
-            const UserGameAccountInfor = yield this.getUserGameAccountInfor(userGameAcctPublicKey, this.program);
-            const GameAccountInfor = yield this.getGameAccountInfor(new PublicKey(UserGameAccountInfor.gameId));
-            const tx = yield this.program.methods.updateUserLevel(new BN(level))
-                .accounts({
-                userGameAcct: userGameAcctPublicKey,
-                gameAcct: UserGameAccountInfor.gameId,
-                signer: new PublicKey(GameAccountInfor.owner).toString(),
-            })
-                .signers([GameOwnerkeypair])
-                .rpc();
-            return tx;
+            const gamePassAccount = yield this.getGamePassAccounts();
+            console.log(gamePassAccount);
+            for (let index = 0; index < gamePassAccount.games.length; index++) {
+                const element = gamePassAccount.games[index];
+                if (element.gameId == userGameAcctPublicKey)
+                    return true;
+            }
+            return false;
         });
     }
-    updateUserScore(score, GameOwnerkeypair, userGameAcctPublicKey) {
+    updateUserLevel(level, userGameAcctPublicKey) {
         return __awaiter(this, void 0, void 0, function* () {
-            const UserGameAccountInfor = yield this.getUserGameAccountInfor(userGameAcctPublicKey, this.program);
-            const GameAccountInfor = yield this.getGameAccountInfor(new PublicKey(UserGameAccountInfor.gameId));
-            const tx = yield this.program.methods.updateUserLevel(new BN(score))
-                .accounts({
-                userGameAcct: userGameAcctPublicKey,
-                gameAcct: UserGameAccountInfor.gameId,
-                signer: new PublicKey(GameAccountInfor.owner).toString(),
-            })
-                .signers([GameOwnerkeypair])
-                .rpc();
-            return tx;
+            try {
+                const UserGameAccountInfor = yield this.getUserGameAccountInfor(userGameAcctPublicKey);
+                const GameAccountInfor = yield this.getGameAccountInfor(new PublicKey(UserGameAccountInfor.gameId));
+                const tx = yield this.program.methods.updateUserLevel(new BN(level))
+                    .accounts({
+                    userGameAcct: userGameAcctPublicKey,
+                    gameAcct: UserGameAccountInfor.gameId,
+                    signer: new PublicKey(GameAccountInfor.owner).toString(),
+                })
+                    .signers([this.GameOwnerkeypair])
+                    .rpc();
+                return { transactionSignature: tx };
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    throw new Error(`Error updating score: ${error.message}`);
+                }
+                else {
+                    console.error("Unknown error:", error);
+                    throw new Error("An unknown error occurred while updating level");
+                }
+            }
+        });
+    }
+    updateUserScore(score, userGameAcctPublicKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const UserGameAccountInfor = yield this.getUserGameAccountInfor(userGameAcctPublicKey);
+                const GameAccountInfor = yield this.getGameAccountInfor(new PublicKey(UserGameAccountInfor.gameId));
+                const tx = yield this.program.methods.updateUserScore(new BN(score))
+                    .accounts({
+                    userGameAcct: userGameAcctPublicKey,
+                    gameAcct: UserGameAccountInfor.gameId,
+                    signer: new PublicKey(GameAccountInfor.owner).toString(),
+                })
+                    .signers([this.GameOwnerkeypair])
+                    .rpc();
+                return { transactionSignature: tx };
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    throw new Error(`Error updating score: ${error.message}`);
+                }
+                else {
+                    console.error("Unknown error:", error);
+                    throw new Error("An unknown error occurred while updating score");
+                }
+            }
         });
     }
     checkIfthisUserHastheGameName(gameOwnerPublicKey, gameName) {
@@ -245,7 +285,6 @@ export class GamePassSDK {
             for (let index = 0; index < result.games.length; index++) {
                 const gameId = result.games[index].gameId;
                 const result2 = yield this.program.account.gameAccts.fetch(gameId);
-                console.log(gameOwnerPublicKey.toString() == new PublicKey(result2.owner).toString());
                 if (gameOwnerPublicKey.toString() == new PublicKey(result2.owner).toString()) {
                     if (result2.gameName == gameName) {
                         myState = true;
@@ -254,6 +293,32 @@ export class GamePassSDK {
                 }
             }
             return myState;
+        });
+    }
+    getSerializedUpdateUserAvatarTransaction(userGameAcctPublicKey, gamerPublicKey, avatar) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const transaction = new Transaction();
+                const instruction = yield this.program.methods.updateUserAvatar(avatar).accounts({
+                    userGameAccount: userGameAcctPublicKey,
+                    signer: gamerPublicKey
+                }).instruction();
+                transaction.add(instruction);
+                transaction.feePayer = new PublicKey(gamerPublicKey);
+                const blockHash = (yield this.provider.connection.getLatestBlockhash('finalized')).blockhash;
+                transaction.recentBlockhash = blockHash;
+                const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: true }).toString('base64');
+                return { serializedTransaction: serializedTransaction };
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    throw new Error(`Error updating user avatar: ${error.message}`);
+                }
+                else {
+                    console.error("Unknown error:", error);
+                    throw new Error("An unknown error occurred while updating user avatar");
+                }
+            }
         });
     }
     getAllGameUniqueId(gameOwnerPublicKey) {
@@ -318,6 +383,254 @@ export class GamePassSDK {
                 else {
                     console.error(error);
                     return [];
+                }
+            }
+        });
+    }
+    getSingleUserGameAccount(gameId, gamerPublicKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const result = yield this.doesGameIdExist(gameId.toString());
+                if (result) {
+                    const gamePassAccount = yield this.getGamePassAccounts();
+                    for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
+                        const accountPDA = gamePassAccount.userGameAccount[index].accountId;
+                        const userGameAccount = yield this.getUserGameAccountInfor(new PublicKey(accountPDA));
+                        if (userGameAccount.gameId == gameId.toString() && userGameAccount.owner.toString() == gamerPublicKey.toString()) {
+                            return Object.assign(Object.assign({}, userGameAccount), { level: Number(userGameAccount.level.toString()), score: Number(userGameAccount.score.toString()) });
+                        }
+                    }
+                }
+                else {
+                    throw ("gameId is not found ");
+                }
+                throw ("No user account found");
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    throw new Error(`Error fetching user game account: ${error.message}`);
+                }
+                else {
+                    console.error("Unknown error:", error);
+                    throw new Error("An unknown error occurred while fetching user game account");
+                }
+            }
+        });
+    }
+    getSingleUserGameAccountAccountId(userGameAcctPublicKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const userGameAccount = yield this.getUserGameAccountInfor(userGameAcctPublicKey);
+                return Object.assign(Object.assign({}, userGameAccount), { level: Number(userGameAccount.level.toString()), score: Number(userGameAccount.score.toString()) });
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    throw new Error(`Error fetching user game account: ${error.message}`);
+                }
+                else {
+                    console.error("Unknown error:", error);
+                    throw new Error("An unknown error occurred while fetching user game account");
+                }
+            }
+        });
+    }
+    getAllUserGameAccount(gameId, gamerPublicKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const userGameAccounts = [];
+            try {
+                const result = yield this.doesGameIdExist(gameId.toString());
+                if (result) {
+                    const gamePassAccount = yield this.getGamePassAccounts();
+                    for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
+                        const accountPDA = gamePassAccount.userGameAccount[index].accountId;
+                        const userGameAccount = yield this.getUserGameAccountInfor(new PublicKey(accountPDA));
+                        if (userGameAccount.gameId == gameId.toString()) {
+                            userGameAccounts.push(Object.assign(Object.assign({}, userGameAccount), { "level": Number(userGameAccount.level.toString()), "score": Number(userGameAccount.score.toString()) }));
+                        }
+                    }
+                }
+                else {
+                    throw ("gameId is not found ");
+                }
+                return userGameAccounts;
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    throw new Error(`Error fetching user game account: ${error.message}`);
+                }
+                else {
+                    console.error("Unknown error:", error);
+                    throw new Error("An unknown error occurred while fetching user game account");
+                }
+            }
+        });
+    }
+    createBadge(gameId, badgeMintAddress, badgeName, badgeDescription, badgeImageUri, criteria) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const result = yield this.doesGameIdExist(gameId.toString());
+                if (result) {
+                    const tx = yield this.program.methods.createBadge(badgeName, badgeDescription, badgeImageUri, criteria)
+                        .accounts({
+                        gameAcct: gameId,
+                        badge: badgeMintAddress,
+                        user: this.GameOwnerkeypair.publicKey,
+                        systemProgram: SystemProgram.programId
+                    })
+                        .signers([this.GameOwnerkeypair])
+                        .rpc();
+                    return {
+                        transactionSignature: tx
+                    };
+                }
+                else {
+                    throw new Error('gameId is not found');
+                }
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    // console.error('Error initializing game:', error);
+                    throw new Error(`Failed to initialize game: ${error.message}`);
+                }
+                else {
+                    // console.error('Unknown error initializing game:', error);
+                    throw new Error('Failed to initialize game due to an unknown error.');
+                }
+            }
+        });
+    }
+    assignBadge(gameId, badgeMintAddress, userGameAcctPublicKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const result = yield this.doesGameIdExist(gameId.toString());
+                if (result) {
+                    const tx = yield this.program.methods.assignBadge()
+                        .accounts({
+                        gameAcct: gameId,
+                        badge: badgeMintAddress,
+                        user: this.GameOwnerkeypair.publicKey,
+                        userGameAcct: userGameAcctPublicKey
+                    })
+                        .signers([this.GameOwnerkeypair])
+                        .rpc();
+                    return {
+                        transactionSignature: tx
+                    };
+                }
+                else {
+                    throw new Error('gameId is not found');
+                }
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    // console.error('Error initializing game:', error);
+                    throw new Error(`Failed to initialize game: ${error.message}`);
+                }
+                else {
+                    // console.error('Unknown error initializing game:', error);
+                    throw new Error('Failed to initialize game due to an unknown error.');
+                }
+            }
+        });
+    }
+    updateLeaderboard(gameId, leaderboardAddress, userGameAcctPublicKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const result = yield this.doesGameIdExist(gameId.toString());
+                if (result) {
+                    const tx = yield this.program.methods.updateLeaderboard()
+                        .accounts({
+                        gameAcct: gameId,
+                        leaderboard: leaderboardAddress,
+                        userGameAcct: userGameAcctPublicKey,
+                        user: this.GameOwnerkeypair.publicKey,
+                    })
+                        .signers([this.GameOwnerkeypair])
+                        .rpc();
+                    return {
+                        transactionSignature: tx
+                    };
+                }
+                else {
+                    throw new Error('gameId is not found');
+                }
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    // console.error('Error initializing game:', error);
+                    throw new Error(`Failed to initialize game: ${error.message}`);
+                }
+                else {
+                    // console.error('Unknown error initializing game:', error);
+                    throw new Error('Failed to initialize game due to an unknown error.');
+                }
+            }
+        });
+    }
+    createTieredBadge(gameId, badgeMintAddress, badgeName, badgeDescription, tiers, criteria) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const result = yield this.doesGameIdExist(gameId.toString());
+                if (result) {
+                    const tx = yield this.program.methods.createTieredBadge(badgeName, badgeDescription, tiers, criteria)
+                        .accounts({
+                        gameAcct: gameId,
+                        badge: badgeMintAddress,
+                        user: this.GameOwnerkeypair.publicKey,
+                        systemProgram: SystemProgram.programId
+                    })
+                        .signers([this.GameOwnerkeypair])
+                        .rpc();
+                    return {
+                        transactionSignature: tx
+                    };
+                }
+                else {
+                    throw new Error('gameId is not found');
+                }
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    // console.error('Error initializing game:', error);
+                    throw new Error(`Failed to initialize game: ${error.message}`);
+                }
+                else {
+                    // console.error('Unknown error initializing game:', error);
+                    throw new Error('Failed to initialize game due to an unknown error.');
+                }
+            }
+        });
+    }
+    updateBadgeProgress(userGameAcctPublicKey, progress, userBadgeProgressAddress, badgeMintAddress) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const result = yield this.doesUserGameAccoutExist(userGameAcctPublicKey.toString());
+                if (result) {
+                    const tx = yield this.program.methods.createTieredBadge(progress)
+                        .accounts({
+                        badge: badgeMintAddress,
+                        userBadgeProgress: userBadgeProgressAddress,
+                        userGameAcct: userGameAcctPublicKey,
+                        user: this.GameOwnerkeypair.publicKey
+                    })
+                        .signers([this.GameOwnerkeypair])
+                        .rpc();
+                    return {
+                        transactionSignature: tx
+                    };
+                }
+                else {
+                    throw new Error('user game account is not found please check your userGameAcctPublicKey');
+                }
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    // console.error('Error initializing game:', error);
+                    throw new Error(`Failed to initialize game: ${error.message}`);
+                }
+                else {
+                    // console.error('Unknown error initializing game:', error);
+                    throw new Error('Failed to initialize game due to an unknown error.');
                 }
             }
         });

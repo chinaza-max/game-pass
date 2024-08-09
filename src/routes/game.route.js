@@ -22,9 +22,9 @@ class GameRoutes extends GameController {
     this.router.get("/getAllUserGameAccount", this.getAllUserGameAccount);
     this.router.get("/getSingleUserGameAccount", this.getSingleUserGameAccount);
     this.router.get("/getSingleGameAccount", this.getSingleGameAccount);
-
+ 
   } 
 
-}
+} 
 
 export default new GameRoutes().router;

@@ -25,6 +25,8 @@ export class GamePassSDK {
     initializeGame(gameName, gameAvatar) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                if (!this.GameOwnerkeypair)
+                    throw new Error('You need to initial the SDK with your keypair');
                 const result = yield this.checkIfthisUserHastheGameName(this.GameOwnerkeypair.publicKey, gameName);
                 if (result == false) {
                     const createdAt = Date.now();
@@ -191,9 +193,9 @@ export class GamePassSDK {
             return gameAccount;
         });
     }
-    getGameAccountInfor(PublicKey) {
+    getGameAccountInfor(gameId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const gameAccountInfor = yield this.program.account.gameAccts.fetch(PublicKey);
+            const gameAccountInfor = yield this.program.account.gameAccts.fetch(gameId);
             return gameAccountInfor;
         });
     }
@@ -217,10 +219,21 @@ export class GamePassSDK {
     doesUserGameAccoutExist(userGameAcctPublicKey) {
         return __awaiter(this, void 0, void 0, function* () {
             const gamePassAccount = yield this.getGamePassAccounts();
-            console.log(gamePassAccount);
-            for (let index = 0; index < gamePassAccount.games.length; index++) {
-                const element = gamePassAccount.games[index];
-                if (element.gameId == userGameAcctPublicKey)
+            for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
+                const element = gamePassAccount.userGameAccount[index];
+                if (element.accountId == userGameAcctPublicKey)
+                    return true;
+            }
+            return false;
+        });
+    }
+    doesUserGameAccoutExist2(gameId, gamerPublicKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const gamePassAccount = yield this.getGamePassAccounts();
+            for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
+                const element = gamePassAccount.userGameAccount[index];
+                const UserGameAccountInfor = yield this.getUserGameAccountInfor(new PublicKey(element.accountId));
+                if (UserGameAccountInfor.owner.toString() == gamerPublicKey.toString())
                     return true;
             }
             return false;
@@ -434,7 +447,7 @@ export class GamePassSDK {
             }
         });
     }
-    getAllUserGameAccount(gameId, gamerPublicKey) {
+    getAllUserGameAccount(gameId) {
         return __awaiter(this, void 0, void 0, function* () {
             const userGameAccounts = [];
             try {
@@ -569,10 +582,11 @@ export class GamePassSDK {
     }
     createTieredBadge(gameId, badgeMintAddress, badgeName, badgeDescription, tiers, criteria) {
         return __awaiter(this, void 0, void 0, function* () {
+            const tiersWithBN = tiers.map((tier) => (Object.assign(Object.assign({}, tier), { requiredProgress: new BN(tier.requiredProgress) })));
             try {
                 const result = yield this.doesGameIdExist(gameId.toString());
                 if (result) {
-                    const tx = yield this.program.methods.createTieredBadge(badgeName, badgeDescription, tiers, criteria)
+                    const tx = yield this.program.methods.createTieredBadge(badgeName, badgeDescription, tiersWithBN, criteria)
                         .accounts({
                         gameAcct: gameId,
                         badge: badgeMintAddress,
@@ -606,7 +620,7 @@ export class GamePassSDK {
             try {
                 const result = yield this.doesUserGameAccoutExist(userGameAcctPublicKey.toString());
                 if (result) {
-                    const tx = yield this.program.methods.createTieredBadge(progress)
+                    const tx = yield this.program.methods.createTieredBadge(new BN(progress))
                         .accounts({
                         badge: badgeMintAddress,
                         userBadgeProgress: userBadgeProgressAddress,

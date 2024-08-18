@@ -20,13 +20,11 @@ class Server {
       this.port = port;
       this.mode = mode;
       this.app = express();
-      this.initializeDbAndFirebaseAndProgram();
       this.initializeMiddlewaresAndRoutes();
     }
   
     async initializeDbAndFirebaseAndProgram(){
       await DB.connectDB()
-      await DB.connectCLUSTERandReturnProgram()
     }
      
     initializeMiddlewaresAndRoutes(){

@@ -115,6 +115,43 @@ export default class GameController {
 
 
   
+
+  async doesUserGameAccountExist(
+    req,
+    res,
+    next
+  ){
+    const data=req.body
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        const response= await gameService.handleDoesUserGameAccountExist(my_bj);
+
+        if(response){
+          return res.status(200).json({
+            status: 200,
+            message: "success.",
+            data: response
+          });
+        }else{
+          return res.status(400).json({
+            status: 400,
+            message: "Action  failed.",
+          });
+        }
+      
+
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
+
+
   async userGameAccountActions(
     req,
     res,

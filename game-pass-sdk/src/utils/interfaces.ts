@@ -135,8 +135,6 @@ export type UpdateBadgeProgressResult= {
 }
 
 
-
-
 export type Tier ={
   tierName: string;
   tierImageUri: string;

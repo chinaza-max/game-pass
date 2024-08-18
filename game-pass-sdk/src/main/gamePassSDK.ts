@@ -20,7 +20,6 @@ import { GamePass, GameAccts, UserGameAccount,
 const myProgramId="JBJoGmeBtQ8NNhz4QqH1c1onikK4MERB5Sz3mvHwokmP"
 import IDL  from "../utils/idl.json"  assert { type: 'json' };
 import BN from 'bn.js';
-import { Console } from 'console';
 
 
 
@@ -44,7 +43,11 @@ export class GamePassSDK {
   async initializeGame(gameName: string , gameAvatar: string): Promise<InitializeGameResult> {
 
     try {
+    
+      if(!this.GameOwnerkeypair)  throw new Error('You need to initial the SDK with your keypair');
+
       const result=await  this.checkIfthisUserHastheGameName(this.GameOwnerkeypair.publicKey, gameName)
+
       if(result==false){
           const createdAt = Date.now();
 
@@ -117,6 +120,7 @@ export class GamePassSDK {
 
           const transaction = new Transaction();
 
+          
           const instruction =await this.program.methods.initializeGame(
             new BN(uniqueId2),
             gameName,
@@ -279,8 +283,8 @@ export class GamePassSDK {
     return gameAccount as GamePass;
   }
 
-async getGameAccountInfor(PublicKey: PublicKey): Promise<GameAccts> {
-  const gameAccountInfor = await this.program.account.gameAccts.fetch(PublicKey);
+async getGameAccountInfor(gameId: PublicKey): Promise<GameAccts> {
+  const gameAccountInfor = await this.program.account.gameAccts.fetch(gameId);
   return gameAccountInfor as GameAccts;
 }
 
@@ -320,7 +324,22 @@ async doesUserGameAccoutExist(userGameAcctPublicKey: string): Promise<boolean> {
     }
   
     return false;
-  }
+}
+
+async doesUserGameAccoutExist2(gameId:PublicKey, gamerPublicKey: PublicKey ): Promise<boolean> {
+
+  const gamePassAccount = await this.getGamePassAccounts();
+
+    for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
+      const element = gamePassAccount.userGameAccount[index];
+      const UserGameAccountInfor=await this.getUserGameAccountInfor(new PublicKey(element.accountId))
+ 
+      if (UserGameAccountInfor.owner.toString() == gamerPublicKey.toString()) return true;
+  
+    }
+  
+    return false;
+}
 
   
 async updateUserLevel(level: number, userGameAcctPublicKey:PublicKey): Promise<UpdateUserLevelResult> {
@@ -357,9 +376,7 @@ async updateUserLevel(level: number, userGameAcctPublicKey:PublicKey): Promise<U
 
 async updateUserScore(score: number, userGameAcctPublicKey:PublicKey): Promise<UpdateUserScoreResult> {
 
-
   try {
-
 
       const UserGameAccountInfor=await this.getUserGameAccountInfor(userGameAcctPublicKey)
       const GameAccountInfor=await this.getGameAccountInfor(new PublicKey(UserGameAccountInfor.gameId))
@@ -532,7 +549,6 @@ async checkIfthisUserHastheGameName(gameOwnerPublicKey: PublicKey, gameName: str
     }
   }
 
-
   async getSingleUserGameAccount(gameId:PublicKey, gamerPublicKey:PublicKey): Promise<UserGameAccount2>{
    
     try {  
@@ -574,8 +590,6 @@ async checkIfthisUserHastheGameName(gameOwnerPublicKey: PublicKey, gameName: str
     }
   }
 
-
-
   async getSingleUserGameAccountAccountId(userGameAcctPublicKey:PublicKey): Promise<UserGameAccount2>{
    
     try {  
@@ -599,8 +613,7 @@ async checkIfthisUserHastheGameName(gameOwnerPublicKey: PublicKey, gameName: str
     }
   }
 
-
-  async getAllUserGameAccount(gameId:PublicKey, gamerPublicKey:PublicKey): Promise<UserGameAccount2[]>{
+  async getAllUserGameAccount(gameId:PublicKey): Promise<UserGameAccount2[]>{
 
     const userGameAccounts:UserGameAccount2[] =[];
 

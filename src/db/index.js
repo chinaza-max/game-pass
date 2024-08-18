@@ -6,7 +6,9 @@ import { Connection, clusterApiUrl, PublicKey, SystemProgram } from '@solana/web
 import * as anchor from '@project-serum/anchor';
 import idl from "./idl.json" assert { type: 'json' };
 import {Wallet} from '@project-serum/anchor';
-
+import {   
+  GamePassSDK
+  } from "game-pass-sdk"
 
 class DB {
 
@@ -95,26 +97,13 @@ this.sequelize.query(disableForeignKeyChecks)
 
        
   }
-  
-  async connectCLUSTERandReturnProgram() {
+ 
 
-    const programId = new PublicKey(process.env.PROGRAM_ID);
-    const connection = new Connection(clusterApiUrl('devnet'));
+  async getGameKeyPair(){
     const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
     const secretKey = Uint8Array.from(secret)
     const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
-    
-    const provider = new anchor.AnchorProvider(connection, new Wallet(Keypair), {});
-    const program = new anchor.Program(idl, programId, provider);
-     
-    DB.program=program
-    DB.userKeypair=Keypair  
-    DB.connection=connection
-
-  }
-  
-  getBlockChainData() {
-    return {gamePassKeypair:DB.userKeypair,program:DB.program,connection:DB.connection};
+    return Keypair
   }
 
 

@@ -106,18 +106,12 @@ class UserService {
 
     try { 
         
-
       return await GamePassSDKInstance.doesUserGameAccoutExist2( new PublicKey(gameId),
-        new PublicKey(gamerPublicKey))
+        new PublicKey(gamerPublicKey))||false
 
     } catch (error) {
    
-      const logs = error.transactionLogs;
-      if (logs.some(log => log.includes("Error Code: UserAlreadyRegistered"))) {
-          throw new BadRequestError("User is already registered. Please try with a different account.");
-      } else {
-          throw new BadRequestError("Transaction failed with error:", error.message)
-        }
+      throw new BadRequestError(error.message)
     }
 
   }
@@ -184,6 +178,8 @@ class UserService {
      return { transaction: txnSignature };
 
     } catch (error) {
+      
+
    
       const logs = error.transactionLogs;
       if (logs.some(log => log.includes("Error Code: UserAlreadyRegistered"))) {

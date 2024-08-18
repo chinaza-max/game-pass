@@ -16,7 +16,8 @@ import { GamePass, GameAccts, UserGameAccount,
   UpdateLeaderboardResult,
   createTieredBadgeResult,
   Tier ,
-  UpdateBadgeProgressResult} from '../utils/interfaces.js'; // Import the interfaces
+  UpdateBadgeProgressResult,
+  UserGameAccount3} from '../utils/interfaces.js'; // Import the interfaces
 const myProgramId="JBJoGmeBtQ8NNhz4QqH1c1onikK4MERB5Sz3mvHwokmP"
 import IDL  from "../utils/idl.json"  assert { type: 'json' };
 import BN from 'bn.js';
@@ -87,10 +88,8 @@ export class GamePassSDK {
       }
     } catch (error) {
       if (error instanceof Error) {
-       // console.error('Error initializing game:', error);
         throw new Error(`Failed to initialize game: ${error.message}`);
       } else {
-       // console.error('Unknown error initializing game:', error);
         throw new Error('Failed to initialize game due to an unknown error.');
       }
     }
@@ -326,19 +325,29 @@ async doesUserGameAccoutExist(userGameAcctPublicKey: string): Promise<boolean> {
     return false;
 }
 
-async doesUserGameAccoutExist2(gameId:PublicKey, gamerPublicKey: PublicKey ): Promise<boolean> {
+async doesUserGameAccoutExist2(gameId:PublicKey, gamerPublicKey: PublicKey ): Promise<UserGameAccount3 | null> {
+
+
 
   const gamePassAccount = await this.getGamePassAccounts();
+
+   try {
 
     for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
       const element = gamePassAccount.userGameAccount[index];
       const UserGameAccountInfor=await this.getUserGameAccountInfor(new PublicKey(element.accountId))
- 
-      if (UserGameAccountInfor.owner.toString() == gamerPublicKey.toString()) return true;
+      if (UserGameAccountInfor.owner.toString() == gamerPublicKey.toString()&& UserGameAccountInfor.gameId== gameId.toString() ){
+            return {...UserGameAccountInfor,"level":Number(UserGameAccountInfor.level.toString()),
+            "score":Number(UserGameAccountInfor.score.toString())}
+      } 
   
     }
   
-    return false;
+    return null;
+
+   } catch (error) {
+    throw(error)
+   }
 }
 
   

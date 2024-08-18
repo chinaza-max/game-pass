@@ -31,7 +31,7 @@ class DB {
       process.exit(1);
     }*/
 
-    const options= { 
+   /* const options= { 
       logging: console.log,
       dialect: "mysql",
       host: serverConfig.DB_HOST,
@@ -47,13 +47,29 @@ class DB {
       serverConfig.DB_USERNAME,
       serverConfig.DB_PASSWORD,
       options
-    );
+    );*/
+
+
+    const options = {
+      local:"r5a.h.filess.io",
+      username:'gamePass_cagetears',
+      password:'724467894af14faaa8007d79263ed42208cd65d3',
+      database:'gamePass_cagetears',
+      dialect: "mysql",
+      port: 3307,
+      dialectModule:require('mysql2'),
+      logging: console.log,     
+      logQueryParameters: true
+    };
+    this.sequelize = new Sequelize(
+      options
+    )
 
     initModels(this.sequelize);
     if (serverConfig.NODE_ENV == "development") {  
 
 
-        //await this.sequelize.sync({ alter: true }); 
+        await this.sequelize.sync({ alter: true }); 
         //await this.sequelize.sync({ force: true }); 
       }            
 /*         

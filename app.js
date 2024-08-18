@@ -22,7 +22,7 @@ class Server {
       this.app = express();
       this.initializeMiddlewaresAndRoutes();
     }
-  
+    
     async initializeDbAndFirebaseAndProgram(){
       await DB.connectDB()
     }
@@ -63,7 +63,7 @@ class Server {
             console.log(`Server is running on http://localhost:${this.port}`);
         });
     }
-  }
+  } 
   
   const server = new Server(serverConfig.PORT , serverConfig.NODE_ENV );
   server.start();

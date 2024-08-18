@@ -131,19 +131,12 @@ export default class GameController {
                           
         const response= await gameService.handleDoesUserGameAccountExist(my_bj);
 
-        if(response){
-          return res.status(200).json({
-            status: 200,
-            message: "success.",
-            data: response
-          });
-        }else{
-          return res.status(400).json({
-            status: 400,
-            message: "Action  failed.",
-          });
-        }
-      
+        return res.status(200).json({
+          status: 200,
+          message: "success.",
+          data: response
+        });
+       
 
     } catch (error) {
       console.log(error)

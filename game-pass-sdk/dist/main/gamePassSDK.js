@@ -55,11 +55,9 @@ export class GamePassSDK {
             }
             catch (error) {
                 if (error instanceof Error) {
-                    // console.error('Error initializing game:', error);
                     throw new Error(`Failed to initialize game: ${error.message}`);
                 }
                 else {
-                    // console.error('Unknown error initializing game:', error);
                     throw new Error('Failed to initialize game due to an unknown error.');
                 }
             }
@@ -230,13 +228,19 @@ export class GamePassSDK {
     doesUserGameAccoutExist2(gameId, gamerPublicKey) {
         return __awaiter(this, void 0, void 0, function* () {
             const gamePassAccount = yield this.getGamePassAccounts();
-            for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
-                const element = gamePassAccount.userGameAccount[index];
-                const UserGameAccountInfor = yield this.getUserGameAccountInfor(new PublicKey(element.accountId));
-                if (UserGameAccountInfor.owner.toString() == gamerPublicKey.toString())
-                    return true;
+            try {
+                for (let index = 0; index < gamePassAccount.userGameAccount.length; index++) {
+                    const element = gamePassAccount.userGameAccount[index];
+                    const UserGameAccountInfor = yield this.getUserGameAccountInfor(new PublicKey(element.accountId));
+                    if (UserGameAccountInfor.owner.toString() == gamerPublicKey.toString() && UserGameAccountInfor.gameId == gameId.toString()) {
+                        return Object.assign(Object.assign({}, UserGameAccountInfor), { "level": Number(UserGameAccountInfor.level.toString()), "score": Number(UserGameAccountInfor.score.toString()) });
+                    }
+                }
+                return null;
             }
-            return false;
+            catch (error) {
+                throw (error);
+            }
         });
     }
     updateUserLevel(level, userGameAcctPublicKey) {

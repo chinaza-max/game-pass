@@ -94,6 +94,21 @@ export type UserGameAccount2 = {
   customData: string;
 };
 
+export type UserGameAccount3 = {
+  image: string;
+  gameId: string;
+  accountId: string;
+  level: number;
+  score: number;
+  status: string;
+  assets: Assets[];
+  createdAt: BN;
+  updateAt: BN;
+  owner: PublicKey;
+  badges: PublicKey[];
+  customData: string;
+};
+
 export type GamePass = {
   bump: number;
   totalUsers: BN;

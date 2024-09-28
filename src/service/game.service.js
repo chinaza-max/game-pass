@@ -10,7 +10,8 @@ import { Wallet  } from '@project-serum/anchor';
 import mailService from "./mail.service.js";
 import crypto from 'crypto';
 import DB from '../db/index.js';
-import {  SystemProgram ,Transaction,PublicKey, sendAndConfirmRawTransaction} from '@solana/web3.js';
+
+import {  SystemProgram ,Transaction,PublicKey, sendAndConfirmRawTransaction, Connection , clusterApiUrl} from '@solana/web3.js';
 import { findProgramAddressSync } from '@project-serum/anchor/dist/cjs/utils/pubkey.js'
 import * as anchor from '@project-serum/anchor';
 import {   
@@ -169,10 +170,10 @@ class UserService {
 
     try { 
 
-      const { connection }=DB.getBlockChainData() 
 
       const serializedTransaction = Buffer.from(signedTransaction, 'base64');
-      
+      const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+
       const txnSignature = await sendAndConfirmRawTransaction(connection, serializedTransaction);
       
      return { transaction: txnSignature };

@@ -6,9 +6,7 @@ import { Connection, clusterApiUrl, PublicKey, SystemProgram } from '@solana/web
 import * as anchor from '@project-serum/anchor';
 import idl from "./idl.json" assert { type: 'json' };
 import {Wallet} from '@project-serum/anchor';
-import {   
-  GamePassSDK
-  } from "game-pass-sdk"
+
 
 class DB {
 

@@ -181,12 +181,16 @@ class UserService {
       
 
    
-      const logs = error.transactionLogs;
-      if (logs.some(log => log.includes("Error Code: UserAlreadyRegistered"))) {
-          throw new BadRequestError("User is already registered. Please try with a different account.");
+      const logs = error.transactionLogs || [];
+
+      if (logs.length && logs.some(log => log.includes("Error Code: UserAlreadyRegistered"))) {
+        throw new BadRequestError("User is already registered. Please try with a different account.");
       } else {
-          throw new BadRequestError("Transaction failed with error:", error)
-        }
+        // You can print the error message or stack to log more details for debugging
+        console.error("Transaction failed with error:", error);
+        throw new BadRequestError(`Transaction failed with error: ${error.message || error}`);
+      }
+
     }
 
   }

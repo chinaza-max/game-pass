@@ -170,6 +170,7 @@ class UserService {
 
     try { 
 
+      console.error(signedTransaction);
 
       const serializedTransaction = Buffer.from(signedTransaction, 'base64');
       const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
@@ -180,6 +181,7 @@ class UserService {
 
     } catch (error) {
       
+      console.error("Transaction failed with error:", error);
 
    
       const logs = error.transactionLogs || [];

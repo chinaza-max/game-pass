@@ -80,11 +80,19 @@ class UserService {
       if(type=="initializeUserGameAccount"){
 
         try {       
-       
-          return await GamePassSDKInstance.getSerializedInitializeUserGameAccountTransaction(new PublicKey(gameId), userAvatar , new PublicKey(gamerPublicKey)) 
+          
+
+
+          const serializedInitializeTransaction=await GamePassSDKInstance.getSerializedInitializeUserGameAccountTransaction(new PublicKey(gameId), userAvatar , new PublicKey(gamerPublicKey)) 
+          console.log("serializedInitializeTransaction")
+          console.log(serializedInitializeTransaction)
+          console.log("serializedInitializeTransaction")
+
+          return serializedInitializeTransaction
    
         } catch (error) {
           console.log(error)
+           new SystemError(error)
         }     
      
       }

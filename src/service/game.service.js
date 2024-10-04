@@ -43,7 +43,7 @@ class UserService {
       gamerPublicKey,
       score,
       level,
-      gameAvatar,
+      gameAvatar,  
       userAvatar,
       type
     } = await gameUtil.verifyHandleGetTrasaction.validateAsync(data);
@@ -348,10 +348,9 @@ class UserService {
 
       GamePassSDKInstance.intializeGamePass()
       
-
-    } catch (error) {
+    } catch (error) {    
       
-      console.error('Error initializing game:', error);
+      console.error('Error initializing game:', error);   
       throw new Error(error)
     }
 

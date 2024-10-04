@@ -111,7 +111,9 @@ this.sequelize.query(disableForeignKeyChecks)
   }
  
 
-  async getGameKeyPair(){
+  async getGameKeyPair(){ 
+
+    console.log(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
     const secret = JSON.parse(process.env.PRIVATE_KEY_BLOCK_CHAIN_PUBLIC)
     const secretKey = Uint8Array.from(secret)
     const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)

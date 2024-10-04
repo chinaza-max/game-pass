@@ -64,6 +64,6 @@ class Server {
         });
     }
   } 
-  
+    
   const server = new Server(serverConfig.PORT , serverConfig.NODE_ENV );
   server.start();

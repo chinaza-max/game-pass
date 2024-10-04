@@ -111,7 +111,7 @@ class UserService {
         new PublicKey(gamerPublicKey))||false
 
     } catch (error) {
-   
+      
       throw new BadRequestError(error.message)
     }
 
@@ -337,6 +337,62 @@ class UserService {
       }
     } catch (error) {
       console.error('Error initializing game:', error);
+    }
+
+  }
+
+  
+  async handleInitializeGamePassAccount(data) {
+ 
+    try {
+
+      GamePassSDKInstance.intializeGamePass()
+      
+
+    } catch (error) {
+      
+      console.error('Error initializing game:', error);
+      throw new Error(error)
+    }
+
+  }
+
+  async handleInitializeGame(data) {
+    let { 
+      gameName, gameAvatar
+    } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
+
+    try {
+
+     const txnSignature=await GamePassSDKInstance.initializeGame(gameName, gameAvatar)
+      
+     return { transactionSignature: txnSignature };
+
+    } catch (error) {
+      
+      console.error('Error initializing game:', error);
+      throw new Error(error)
+    }
+
+  }
+
+
+
+   async handleInitializeGame(data) {
+    let { 
+      gameName, gameAvatar
+    } = await gameUtil.verifyHandleInitializeGame.validateAsync(data);
+
+    try {
+
+     const txnSignature=await GamePassSDKInstance.initializeGame(gameName, gameAvatar)
+      
+     return { transactionSignature: txnSignature };
+
+    } catch (error) {
+      
+      console.error('Error initializing game:', error);
+      throw new Error(error)
     }
 
   }

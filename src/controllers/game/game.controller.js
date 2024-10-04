@@ -3,6 +3,36 @@ import gameService from "../../service/game.service.js";
 
 export default class GameController {
 
+
+
+  
+
+  async initializeGamePassAccount(
+    req,
+    res,
+    next
+  ){
+    const data=req.body
+ 
+    try {
+        const my_bj = {
+          ...data,
+          //userId:req.user.id,
+        }
+                          
+        await gameService.handleInitializeGamePassAccount(my_bj);
+  
+
+      return res.status(200).json({
+        status: 200,
+        message: "success."
+      });
+    } catch (error) {
+      console.log(error)
+      next(error);
+    }
+  }
+
   async initializeGame(
     req,
     res,

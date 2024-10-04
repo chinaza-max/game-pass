@@ -40,7 +40,7 @@ class UserService {
       const secretKey = Uint8Array.from(secret)
       const Keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
       
-      const GamePassSDKInstance=new GamePassSDK(new Wallet(Keypair))
+      const GamePassSDKInstance=new GamePassSDK(new Wallet(Keypair))  
 
       GamePassSDKInstance.intializeGamePass()
 

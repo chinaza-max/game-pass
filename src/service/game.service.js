@@ -115,11 +115,12 @@ class UserService {
 
     try { 
         
-      return await GamePassSDKInstance.doesUserGameAccoutExist2( new PublicKey(gameId),
+      return await GamePassSDKInstance.doesUserGameAccoutExist2(
+         new PublicKey(gameId),
         new PublicKey(gamerPublicKey))||false
 
     } catch (error) {
-      
+      console.log(error)
       throw new BadRequestError(error.message)
     }
 
